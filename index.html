@@ -1,0 +1,3286 @@
+
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a4d2e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>የግቢ ጉባኤ ሙሉ ሲስተም | Gibi Gubae Complete System</title>
+<style>
+  :root{
+    --primary:#1a4d2e;
+    --primary-light:#2d7a4f;
+    --primary-dark:#0f2e1c;
+    --gold:#c9a227;
+    --gold-light:#e6c757;
+    --bg:#f0f4f8;
+    --card:#ffffff;
+    --text:#1e2a22;
+    --muted:#6b7c72;
+    --border:#d9e2db;
+    --danger:#b83b3b;
+    --success:#2d7a4f;
+    --info:#2c5f9e;
+    --purple:#6b4c9a;
+    --shadow:0 2px 12px rgba(26,77,46,0.08);
+    --shadow-lg:0 10px 40px rgba(26,77,46,0.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Noto Sans Ethiopic','Segoe UI',Tahoma,sans-serif;
+    background:var(--bg);color:var(--text);
+    line-height:1.6;padding-bottom:80px;
+  }
+
+  /* ===== HEADER ===== */
+  header{
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);
+    color:#fff;padding:18px 20px;box-shadow:var(--shadow);
+    position:sticky;top:0;z-index:100;
+  }
+  .header-inner{
+    max-width:1280px;margin:0 auto;
+    display:flex;justify-content:space-between;
+    align-items:center;flex-wrap:wrap;gap:12px;
+  }
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-icon{
+    width:46px;height:46px;background:var(--gold);
+    border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:22px;font-weight:bold;color:var(--primary);
+  }
+  .logo h1{font-size:1.1rem;font-weight:700;}
+  .logo p{font-size:0.74rem;opacity:0.85;}
+  .header-menu{
+    background:rgba(255,255,255,0.15);border:none;color:#fff;
+    width:42px;height:42px;border-radius:10px;
+    font-size:1.3rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .header-menu:hover{background:rgba(255,255,255,0.3);}
+
+  /* ===== MAIN LAYOUT ===== */
+  .layout{
+    max-width:1280px;margin:0 auto;
+    display:grid;grid-template-columns:280px 1fr;
+    gap:20px;padding:20px 16px;
+  }
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  /* ===== SIDEBAR (MENU) ===== */
+  .sidebar{
+    background:var(--card);border-radius:14px;
+    box-shadow:var(--shadow);border:1px solid var(--border);
+    height:fit-content;position:sticky;top:90px;
+    max-height:calc(100vh - 110px);overflow-y:auto;
+    padding:14px;
+  }
+  @media(max-width:900px){
+    .sidebar{position:relative;top:0;max-height:none;}
+  }
+  .sidebar-group{margin-bottom:20px;}
+  .sidebar-group:last-child{margin-bottom:0;}
+  .sidebar-group-title{
+    font-size:0.78rem;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:1px;
+    padding:0 6px 8px;display:flex;align-items:center;gap:6px;
+  }
+  .menu-item{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 14px;background:#fff;
+    border:1px solid var(--border);border-radius:30px;
+    margin-bottom:8px;cursor:pointer;
+    transition:all 0.2s;font-size:0.88rem;
+    font-weight:600;color:var(--text);
+  }
+  .menu-item:hover{
+    background:#f8fbf9;border-color:var(--primary-light);
+    transform:translateX(3px);
+    box-shadow:0 3px 10px rgba(45,122,79,0.12);
+  }
+  .menu-item.active{
+    background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    color:#fff;border-color:var(--primary);
+    box-shadow:0 4px 14px rgba(26,77,46,0.3);
+  }
+  .menu-item.active .menu-icon{background:rgba(255,255,255,0.2);}
+  .menu-icon{
+    width:38px;height:38px;border-radius:50%;
+    background:#f0f5f1;display:flex;align-items:center;
+    justify-content:center;font-size:1.15rem;flex-shrink:0;
+    transition:background 0.2s;
+  }
+  .menu-item:hover .menu-icon{background:#e8f3ec;}
+
+  /* ===== CONTENT AREA ===== */
+  .content{min-width:0;}
+
+  .page{display:none;animation:fadeIn 0.3s ease;}
+  .page.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  .page-title{
+    font-size:1.4rem;color:var(--primary);
+    margin-bottom:6px;display:flex;align-items:center;gap:10px;
+  }
+  .page-sub{
+    color:var(--muted);font-size:0.88rem;
+    margin-bottom:20px;padding-bottom:14px;
+    border-bottom:2px solid var(--gold-light);
+  }
+
+
+  /* ===== DASHBOARD LAYOUT (አቀማመጥ ብቻ) ===== */
+  .dash-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;align-items:start;}
+  .dash-col{display:flex;flex-direction:column;min-width:0;}
+  .dash-actions{margin-top:0;}
+  .dash-actions .btn{flex:1 1 140px;justify-content:center;}
+  .dash-levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+
+  /* ===== CARDS ===== */
+  .card{
+    background:var(--card);border-radius:12px;
+    padding:20px;box-shadow:var(--shadow);
+    border:1px solid var(--border);margin-bottom:16px;
+  }
+  .card h3{
+    color:var(--primary);font-size:1rem;
+    margin-bottom:14px;display:flex;
+    align-items:center;gap:8px;
+    padding-bottom:10px;border-bottom:1px solid var(--border);
+  }
+
+  /* ===== FORMS ===== */
+  .form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;
+  }
+  .form-field{display:flex;flex-direction:column;gap:5px;}
+  .form-field.full{grid-column:1 / -1;}
+  .form-field label{
+    font-size:0.8rem;font-weight:600;color:var(--muted);
+  }
+  .form-field label .req{color:var(--danger);}
+  .form-field input,
+  .form-field select,
+  .form-field textarea{
+    font-family:inherit;padding:10px 12px;
+    border:1px solid var(--border);border-radius:8px;
+    font-size:0.88rem;background:#fbfdfb;
+    transition:all 0.2s;width:100%;
+  }
+  .form-field input:focus,
+  .form-field select:focus,
+  .form-field textarea:focus{
+    outline:none;border-color:var(--primary-light);
+    box-shadow:0 0 0 3px rgba(45,122,79,0.1);
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn{
+    font-family:inherit;padding:10px 20px;
+    border:none;border-radius:8px;font-weight:600;
+    font-size:0.86rem;cursor:pointer;transition:all 0.2s;
+    display:inline-flex;align-items:center;gap:6px;
+    white-space:nowrap;
+  }
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-light);transform:translateY(-1px);}
+  .btn-gold{background:var(--gold);color:var(--primary);}
+  .btn-gold:hover{background:var(--gold-light);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{background:#f0f5f1;color:var(--primary);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-danger:hover{opacity:0.9;}
+  .btn-info{background:var(--info);color:#fff;}
+  .btn-info:hover{opacity:0.9;}
+  .btn-sm{padding:6px 12px;font-size:0.76rem;border-radius:6px;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+
+  /* ===== STATS ===== */
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:14px;margin-bottom:20px;
+  }
+  .stat-card{
+    background:var(--card);border-radius:12px;
+    padding:16px;box-shadow:var(--shadow);
+    border:1px solid var(--border);
+    border-left:4px solid var(--primary);
+    text-align:center;
+  }
+  .stat-card.gold{border-left-color:var(--gold);}
+  .stat-card.info{border-left-color:var(--info);}
+  .stat-card.danger{border-left-color:var(--danger);}
+  .stat-card.purple{border-left-color:var(--purple);}
+  .stat-num{
+    font-size:1.8rem;font-weight:800;color:var(--primary);
+    line-height:1.1;
+  }
+  .stat-card.gold .stat-num{color:var(--gold);}
+  .stat-card.info .stat-num{color:var(--info);}
+  .stat-card.danger .stat-num{color:var(--danger);}
+  .stat-card.purple .stat-num{color:var(--purple);}
+  .stat-label{font-size:0.76rem;color:var(--muted);font-weight:600;margin-top:4px;}
+
+  /* ===== TABLE ===== */
+  .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:0.84rem;}
+  table th{
+    background:#e8f3ec;color:var(--primary);
+    padding:11px 10px;text-align:left;font-weight:700;
+    border-bottom:2px solid var(--border);white-space:nowrap;
+    font-size:0.78rem;
+  }
+  table td{
+    padding:10px;border-bottom:1px solid var(--border);
+    vertical-align:middle;
+  }
+  table tr:hover{background:#f8fbf9;}
+  table tr:last-child td{border-bottom:none;}
+
+  /* ===== BADGES ===== */
+  .badge{
+    display:inline-block;padding:3px 10px;
+    border-radius:12px;font-size:0.7rem;font-weight:700;
+    white-space:nowrap;
+  }
+  .badge-success{background:#e8f3ec;color:var(--success);}
+  .badge-warn{background:#fdf3e0;color:#b8860b;}
+  .badge-info{background:#e3eefb;color:var(--info);}
+  .badge-danger{background:#fbe5e5;color:var(--danger);}
+  .badge-gold{background:#fbf6e0;color:#8a6d00;}
+  .badge-purple{background:#f0e9fa;color:var(--purple);}
+
+  /* ===== FILTERS ===== */
+  .filters{
+    display:flex;gap:10px;flex-wrap:wrap;
+    margin-bottom:16px;align-items:flex-end;
+  }
+  .filters .form-field{flex:1;min-width:150px;}
+
+  /* ===== AVATAR ===== */
+  .avatar{
+    width:36px;height:36px;border-radius:50%;
+    background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:0.85rem;flex-shrink:0;
+  }
+  .user-cell{display:flex;align-items:center;gap:10px;}
+  .user-cell .name{font-weight:700;font-size:0.86rem;}
+  .user-cell .sub{font-size:0.72rem;color:var(--muted);}
+
+  /* ===== ID CARD ===== */
+  .id-card{
+    background:linear-gradient(135deg,#fff 0%,#f8fbf9 100%);
+    border:3px solid var(--primary);border-radius:16px;
+    width:340px;max-width:100%;overflow:hidden;
+    box-shadow:var(--shadow-lg);position:relative;
+  }
+  .id-card::before{
+    content:'';position:absolute;top:0;right:0;
+    width:100px;height:100px;
+    background:radial-gradient(circle,var(--gold-light) 0%,transparent 70%);
+    opacity:0.3;
+  }
+  .id-header{
+    background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    color:#fff;padding:14px 18px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .id-header .cross{
+    width:36px;height:36px;background:var(--gold);
+    border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:20px;color:var(--primary);
+    font-weight:bold;
+  }
+  .id-header h4{font-size:0.92rem;line-height:1.3;}
+  .id-header p{font-size:0.68rem;opacity:0.9;}
+  .id-body{padding:16px;display:flex;gap:14px;position:relative;}
+  .id-photo{
+    width:76px;height:96px;border:2px solid var(--border);
+    border-radius:8px;background:#f0f5f1;
+    display:flex;align-items:center;justify-content:center;
+    font-size:2rem;color:var(--muted);flex-shrink:0;
+  }
+  .id-info{flex:1;font-size:0.8rem;}
+  .id-info .row{margin-bottom:5px;}
+  .id-info .lbl{color:var(--muted);font-size:0.68rem;font-weight:600;}
+  .id-info .val{color:var(--text);font-weight:700;}
+  .id-idnum{
+    background:var(--gold);color:var(--primary);
+    padding:8px 14px;text-align:center;
+    font-weight:800;font-size:0.92rem;
+    letter-spacing:1.5px;font-family:'Courier New',monospace;
+  }
+  .id-footer{
+    background:#f0f5f1;padding:10px 18px;
+    font-size:0.66rem;color:var(--muted);
+    text-align:center;border-top:1px dashed var(--border);
+  }
+
+  /* ===== ATTENDANCE ===== */
+  .att-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:10px;
+  }
+  .att-item{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 14px;background:var(--card);
+    border:1px solid var(--border);border-radius:10px;
+    transition:all 0.2s;cursor:pointer;
+  }
+  .att-item:hover{background:#f8fbf9;}
+  .att-item.present{background:#eef7f1;border-color:var(--success);}
+  .att-item.absent{background:#fbe5e5;border-color:var(--danger);}
+  .att-check{
+    width:26px;height:26px;border-radius:50%;
+    border:2px solid var(--border);background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.75rem;cursor:pointer;flex-shrink:0;
+    transition:all 0.2s;
+  }
+  .att-check.p{background:var(--success);border-color:var(--success);color:#fff;}
+  .att-check.a{background:var(--danger);border-color:var(--danger);color:#fff;}
+  .att-info{flex:1;font-size:0.84rem;}
+  .att-info .n{font-weight:700;}
+  .att-info .s{font-size:0.7rem;color:var(--muted);}
+
+  /* ===== RESOURCE CARDS ===== */
+  .resource-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:14px;
+  }
+  .resource-card{
+    background:var(--card);border-radius:12px;
+    padding:16px;border:1px solid var(--border);
+    box-shadow:var(--shadow);
+    display:flex;flex-direction:column;gap:10px;
+    transition:transform 0.2s, box-shadow 0.2s;
+  }
+  .resource-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+  .resource-icon{
+    width:44px;height:44px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.4rem;background:#e8f3ec;
+  }
+  .resource-card h4{font-size:0.92rem;color:var(--primary);}
+  .resource-card p{font-size:0.78rem;color:var(--muted);flex:1;}
+  .resource-meta{
+    display:flex;justify-content:space-between;
+    align-items:center;font-size:0.72rem;color:var(--muted);
+    padding-top:8px;border-top:1px solid var(--border);
+    gap:8px;flex-wrap:wrap;
+  }
+
+  /* ===== ANNOUNCEMENT ===== */
+  .announce{
+    background:#fdf8e3;border:1px solid var(--gold-light);
+    border-left:4px solid var(--gold);border-radius:10px;
+    padding:14px 16px;margin-bottom:12px;
+    display:flex;gap:12px;align-items:flex-start;
+  }
+  .announce-icon{font-size:1.3rem;flex-shrink:0;}
+  .announce-content{flex:1;}
+  .announce-title{font-weight:700;color:var(--primary);font-size:0.9rem;margin-bottom:4px;}
+  .announce-body{font-size:0.85rem;color:var(--text);}
+  .announce-meta{font-size:0.72rem;color:var(--muted);margin-top:6px;}
+
+  /* ===== MODAL ===== */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.6);z-index:1000;
+    align-items:center;justify-content:center;padding:16px;
+    backdrop-filter:blur(2px);
+  }
+  .modal-overlay.active{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;
+    max-width:660px;width:100%;max-height:90vh;
+    overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-header{
+    background:linear-gradient(135deg,var(--primary),var(--primary-light));
+    color:#fff;padding:18px 22px;
+    display:flex;justify-content:space-between;
+    align-items:center;position:sticky;top:0;
+    border-radius:14px 14px 0 0;z-index:10;
+  }
+  .modal-header h3{font-size:1rem;}
+  .modal-close{
+    background:rgba(255,255,255,0.2);border:none;color:#fff;
+    width:32px;height:32px;border-radius:50%;cursor:pointer;
+    font-size:1.2rem;line-height:1;transition:background 0.2s;
+  }
+  .modal-close:hover{background:rgba(255,255,255,0.35);}
+  .modal-body{padding:22px;}
+  .modal-footer{
+    padding:14px 22px;border-top:1px solid var(--border);
+    display:flex;justify-content:flex-end;gap:10px;
+    background:#fbfdfb;border-radius:0 0 14px 14px;
+    flex-wrap:wrap;
+  }
+
+  /* ===== TOAST ===== */
+  .toast{
+    position:fixed;bottom:24px;right:24px;
+    background:var(--primary);color:#fff;
+    padding:14px 22px;border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
+    font-size:0.88rem;font-weight:600;
+    transform:translateY(100px);opacity:0;
+    transition:all 0.3s ease;z-index:2000;
+    max-width:320px;
+  }
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.error{background:var(--danger);}
+  .toast.success{background:var(--success);}
+
+  /* ===== EMPTY ===== */
+  .empty{
+    text-align:center;padding:36px 20px;color:var(--muted);
+    font-size:0.88rem;
+  }
+  .empty-icon{font-size:2.5rem;margin-bottom:10px;opacity:0.5;}
+
+  /* ===== FOOTER ===== */
+  footer{
+    text-align:center;padding:20px 16px;
+    color:var(--muted);font-size:0.76rem;
+    border-top:1px solid var(--border);
+    background:var(--card);margin-top:20px;
+  }
+  footer strong{color:var(--primary);}
+
+  @media(max-width:640px){
+    .page-title{font-size:1.15rem;}
+    .stat-num{font-size:1.5rem;}
+    .modal-body{padding:16px;}
+    table{font-size:0.76rem;}
+    table th,table td{padding:7px 5px;}
+    .id-card{width:100%;}
+    .sidebar{padding:10px;}
+    .menu-item{font-size:0.82rem;padding:10px 12px;}
+  }
+
+  /* ===== PRINT ===== */
+  @media print{
+    body *{visibility:hidden;}
+    .id-card,.id-card *{visibility:visible;}
+    .id-card{
+      position:absolute;left:0;top:0;
+      box-shadow:none;page-break-inside:avoid;
+    }
+  }
+
+  /* ===== SCROLLBAR ===== */
+  .sidebar::-webkit-scrollbar{width:6px;}
+  .sidebar::-webkit-scrollbar-track{background:#f0f5f1;border-radius:3px;}
+  .sidebar::-webkit-scrollbar-thumb{background:#c1d4c7;border-radius:3px;}
+  .sidebar::-webkit-scrollbar-thumb:hover{background:var(--primary-light);}
+</style>
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">✝</div>
+      <div>
+        <h1>የግቢ ጉባኤ ሙሉ ሲስተም</h1>
+        <p>Gibi Gubae Complete Management System</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;"><button class="header-menu" style="width:auto;padding:0 12px;font-size:0.8rem;font-family:inherit;" onclick="ggMemberLogin()" title="በኮድ ግባ">👤 በኮድ ግባ</button><button class="header-menu" onclick="toggleSidebar()" title="ምናሌ">☰</button></div>
+  </div>
+</header>
+
+<!-- ================= LAYOUT ================= -->
+<div class="layout">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- ስርዓት እና አመራር -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">🏛️ ስርዓት እና አመራር</div>
+      <div class="menu-item active" onclick="showPage('dashboard',this)">
+        <div class="menu-icon">🏛️</div> ክፍላት እና አመራር
+      </div>
+      <div class="menu-item" onclick="showPage('structure',this)">
+        <div class="menu-icon">🧭</div> የግቢ ጉባኤ መዋቅር ክፍል
+      </div>
+      <div class="menu-item" onclick="showPage('attendance',this)">
+        <div class="menu-icon">📅</div> አቴንዳንስ (ቋሚ ክፍል)
+      </div>
+      <div class="menu-item" onclick="showPage('members',this)">
+        <div class="menu-icon">👥</div> አባላት
+      </div>
+      <div class="menu-item" onclick="showPage('students',this)">
+        <div class="menu-icon">📕</div> ተማሪዎች
+      </div>
+      <div class="menu-item" onclick="showPage('teachers',this)">
+        <div class="menu-icon">👨‍🏫</div> መምህራን
+      </div>
+    </div>
+
+    <!-- ትምህርቶች -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">📚 ትምህርቶች</div>
+      <div class="menu-item" onclick="showPage('lesson-plans',this)">
+        <div class="menu-icon">📜</div> ደንብ / ሰነድ
+      </div>
+      <div class="menu-item" onclick="showPage('media',this)">
+        <div class="menu-icon">🎧</div> ትምህርቶች (ኦዲዮ/ቪዲዮ)
+      </div>
+      <div class="menu-item" onclick="showPage('roster',this)">
+        <div class="menu-icon">📋</div> ሮስተር (የትምህርት ክፍል)
+      </div>
+      <div class="menu-item" onclick="showPage('grades',this)">
+        <div class="menu-icon">📊</div> ውጤት/ነጥብ መዝገብ
+      </div>
+      <div class="menu-item" onclick="showPage('idcards',this)">
+        <div class="menu-icon">🪪</div> መታወቂያ ካርድ
+      </div>
+    </div>
+
+    <!-- ግንኙነት -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">💬 ግንኙነት</div>
+      <div class="menu-item" onclick="showPage('forum',this)">
+        <div class="menu-icon">💬</div> የቡድን ውይይት
+      </div>
+      <div class="menu-item" onclick="showPage('announcements',this)">
+        <div class="menu-icon">📢</div> ህዝብ ግንኙነት / ሪፖርት
+      </div>
+      <div class="menu-item" onclick="showPage('messages',this)">
+        <div class="menu-icon">✉️</div> መልእክቶች
+      </div>
+      <div class="menu-item" onclick="showPage('tasks',this)">
+        <div class="menu-icon">📂</div> ሥራ ክትትል
+      </div>
+      <div class="menu-item" onclick="showPage('feedback',this)">
+        <div class="menu-icon">🔄</div> መረጃ ልውውጥ
+      </div>
+      <div class="menu-item" onclick="showPage('feedback2',this)">
+        <div class="menu-icon">🗣️</div> የግራ ውይይት
+      </div>
+    </div>
+
+    <!-- መሳሪያዎች እና ሰነዶች -->
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">🛠️ መሳሪያዎች እና ሰነዶች</div>
+      <div class="menu-item" onclick="showPage('tools',this)">
+        <div class="menu-icon">🧰</div> መሳሪያዎች
+      </div>
+      <div class="menu-item" onclick="showPage('docs',this)">
+        <div class="menu-icon">📄</div> ማረጋገጫ ሰነድ
+      </div>
+      <div class="menu-item" onclick="showPage('reports',this)">
+        <div class="menu-icon">📤</div> ውጤት እና ማስመጣት
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ============ CONTENT ============ -->
+  <main class="content">
+
+    <!-- ===== PAGE: DASHBOARD ===== -->
+    <div id="page-dashboard" class="page active">
+      <h2 class="page-title">🏛️ ክፍላት እና አመራር</h2>
+      <p class="page-sub">የግቢ ጉባኤው አጠቃላይ ሁኔታ፣ ስታቲስቲክስና ፈጣን ተግባራት።</p>
+
+      <div class="stats-grid" id="dashStats"></div>
+
+      <div class="dash-cols">
+        <div class="dash-col">
+          <div class="card">
+            <h3>⚡ ፈጣን ተግባራት</h3>
+            <div class="btn-row dash-actions">
+              <button class="btn btn-primary" onclick="showPageById('students')">📕 ተማሪ መዝግብ</button>
+              <button class="btn btn-gold" onclick="showPageById('teachers')">👨‍🏫 መምህር መዝግብ</button>
+              <button class="btn btn-info" onclick="showPageById('attendance')">📅 አቴንዳንስ</button>
+              <button class="btn btn-ghost" onclick="showPageById('idcards')">🪪 መታወቂያ</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>📊 የቅርብ ጊዜ እንቅስቃሴዎች</h3>
+            <div id="dashRecent"></div>
+          </div>
+        </div>
+
+        <div class="dash-col">
+          <div class="card">
+            <h3>📢 የቅርብ ጊዜ ማስታወቂያዎች</h3>
+            <div id="dashAnnouncements"></div>
+          </div>
+
+          <div class="card">
+            <h3>🎓 ተማሪዎች በደረጃ</h3>
+            <div id="dashLevels"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: STRUCTURE ===== -->
+    <div id="page-structure" class="page">
+      <h2 class="page-title">🧭 የግቢ ጉባኤ መዋቅር ክፍል</h2>
+      <p class="page-sub">የግቢ ጉባኤው መዋቅራዊ አካላት፣ ኃላፊዎችና ቡድኖች።</p>
+
+      <div class="card">
+        <h3>🏛️ የመዋቅር ክፍሎች</h3>
+        <div class="resource-grid" id="structureGrid"></div>
+      </div>
+
+      <div class="card">
+        <h3>➕ አዲስ ክፍል ጨምር</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>የክፍሉ ስም <span class="req">*</span></label>
+            <input type="text" id="structName" placeholder="ለምሳሌ፦ የትምህርት ክፍል" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>ኃላፊ</label>
+            <input type="text" id="structHead" placeholder="የኃላፊ ስም" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>ስልክ</label>
+            <input type="tel" id="structPhone" placeholder="+251 9XX XXX XXX" maxlength="20">
+          </div>
+          <div class="form-field full">
+            <label>መግለጫ</label>
+            <textarea id="structDesc" placeholder="የክፍሉ ተግባር..." maxlength="200" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addStructure()">✅ ጨምር</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: ATTENDANCE ===== -->
+    <div id="page-attendance" class="page">
+      <h2 class="page-title">📅 አቴንዳንስ (ቋሚ ክፍል)</h2>
+      <p class="page-sub">የዕለት አቴንዳንስ መመዝገቢያና የታሪክ መዝገብ።</p>
+
+      <div class="card">
+        <h3>📅 የአቴንዳንስ ቀንና ክፍል</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ቀን <span class="req">*</span></label>
+            <input type="date" id="attDate">
+          </div>
+          <div class="form-field">
+            <label>ክፍል</label>
+            <select id="attClass" onchange="renderAttendance()">
+              <option value="">ሁሉም ክፍሎች</option>
+              <option value="መሠረታዊ">መሠረታዊ</option>
+              <option value="መካከለኛ">መካከለኛ</option>
+              <option value="ከፍተኛ">ከፍተኛ</option>
+              <option value="የቅዱሳት መጻሕፍት ጥናት">የቅዱሳት መጻሕፍት ጥናት</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>ፍለጋ</label>
+            <input type="text" id="attSearch" placeholder="ስም ይፃፉ..." oninput="renderAttendance()">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="markAllPresent()">✅ ሁሉንም ተገኝቷል</button>
+          <button class="btn btn-ghost" onclick="clearAttendance()">🧹 አጽዳ</button>
+          <button class="btn btn-primary" onclick="saveAttendance()">💾 መዝግብ</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>👥 የተማሪዎች ዝርዝር</h3>
+        <div class="att-grid" id="attGrid"></div>
+      </div>
+
+      <div class="card">
+        <h3>📊 የተመዘገቡ አቴንዳንሶች</h3>
+        <div class="table-wrap">
+          <table id="attendanceHistory">
+            <thead>
+              <tr><th>ቀን</th><th>ክፍል</th><th>ተገኝተዋል</th><th>ቀርተዋል</th><th>መጠን</th><th>ተግባር</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: MEMBERS ===== -->
+    <div id="page-members" class="page">
+      <h2 class="page-title">👥 አባላት</h2>
+      <p class="page-sub">የግቢ ጉባኤው አባላት ዝርዝር፣ ሚናዎችና ኃላፊነቶች።</p>
+
+      <div class="stats-grid" id="memberStats"></div>
+
+      <div class="card">
+        <h3>➕ አዲስ አባል መዝግብ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ሙሉ ስም <span class="req">*</span></label>
+            <input type="text" id="memName" placeholder="ሙሉ ስም" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>ስልክ <span class="req">*</span></label>
+            <input type="tel" id="memPhone" placeholder="+251 9XX XXX XXX" maxlength="20">
+          </div>
+          <div class="form-field">
+            <label>ሚና</label>
+            <select id="memRole">
+              <option value="አባል">አባል</option>
+              <option value="ኃላፊ">ኃላፊ</option>
+              <option value="መምህር">መምህር</option>
+              <option value="ጸሐፊ">ጸሐፊ</option>
+              <option value="ገንዘብ ያዥ">ገንዘብ ያዥ</option>
+              <option value="አማካሪ">አማካሪ</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>ጾታ</label>
+            <select id="memGender">
+              <option value="ወንድ">ወንድ</option>
+              <option value="ሴት">ሴት</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>አድራሻ</label>
+            <input type="text" id="memAddress" placeholder="አካባቢ / ከተማ" maxlength="100">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addMember()">✅ መዝግብ</button>
+          <button class="btn btn-ghost" onclick="clearMemberForm()">🧹 አጽዳ</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📋 የአባላት ዝርዝር</h3>
+        <div class="filters">
+          <div class="form-field">
+            <label>ፈልግ</label>
+            <input type="text" id="memSearch" placeholder="ስም/ስልክ" oninput="renderMembers()">
+          </div>
+          <div class="form-field">
+            <label>ሚና</label>
+            <select id="memFilterRole" onchange="renderMembers()">
+              <option value="">ሁሉም</option>
+              <option value="አባል">አባል</option>
+              <option value="ኃላፊ">ኃላፊ</option>
+              <option value="መምህር">መምህር</option>
+              <option value="ጸሐፊ">ጸሐፊ</option>
+              <option value="ገንዘብ ያዥ">ገንዘብ ያዥ</option>
+              <option value="አማካሪ">አማካሪ</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="membersTable">
+            <thead>
+              <tr><th>መለያ</th><th>ሙሉ ስም</th><th>ስልክ</th><th>ሚና</th><th>ጾታ</th><th>አድራሻ</th><th>ተግባር</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: STUDENTS ===== -->
+    <div id="page-students" class="page">
+      <h2 class="page-title">📕 ተማሪዎች</h2>
+      <p class="page-sub">የተማሪዎች ምዝገባ፣ ዝርዝር፣ ማርትዕና ማጥፋት።</p>
+
+      <div class="stats-grid" id="studentStats"></div>
+
+      <div class="card">
+        <h3>➕ አዲስ ተማሪ መዝግብ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ሙሉ ስም <span class="req">*</span></label>
+            <input type="text" id="regFullName" placeholder="ሙሉ ስም" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>የአባት ስም</label>
+            <input type="text" id="regFather" placeholder="የአባት ስም" maxlength="40">
+          </div>
+          <div class="form-field">
+            <label>ጾታ <span class="req">*</span></label>
+            <select id="regGender">
+              <option value="">-- ይምረጡ --</option>
+              <option value="ወንድ">ወንድ</option>
+              <option value="ሴት">ሴት</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>የትውልድ ቀን</label>
+            <input type="date" id="regDob">
+          </div>
+          <div class="form-field">
+            <label>ስልክ <span class="req">*</span></label>
+            <input type="tel" id="regPhone" placeholder="+251 9XX XXX XXX" maxlength="20">
+          </div>
+          <div class="form-field">
+            <label>የወላጅ ስልክ</label>
+            <input type="tel" id="regParentPhone" placeholder="+251 9XX XXX XXX" maxlength="20">
+          </div>
+          <div class="form-field full">
+            <label>አድራሻ</label>
+            <input type="text" id="regAddress" placeholder="አካባቢ / ከተማ / ሀገር" maxlength="100">
+          </div>
+          <div class="form-field full">
+            <label>ኢሜይል</label>
+            <input type="email" id="regEmail" placeholder="example@email.com" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>የትምህርት ደረጃ <span class="req">*</span></label>
+            <select id="regEduLevel">
+              <option value="">-- ይምረጡ --</option>
+              <option value="አንደኛ ደረጃ">አንደኛ ደረጃ (1-8)</option>
+              <option value="ሁለተኛ ደረጃ">ሁለተኛ ደረጃ (9-12)</option>
+              <option value="ዩኒቨርሲቲ">ዩኒቨርሲቲ</option>
+              <option value="ኮሌጅ">ኮሌጅ</option>
+              <option value="ሙያ">የሙያ ስልጠና</option>
+              <option value="ሌላ">ሌላ</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>የተማሪነት ሁኔታ <span class="req">*</span></label>
+            <select id="regStatus">
+              <option value="">-- ይምረጡ --</option>
+              <option value="በትምህርት ላይ">በትምህርት ላይ</option>
+              <option value="ተመርቋል">ተመርቋል</option>
+              <option value="ለጊዜው አቁሟል">ለጊዜው አቁሟል</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>የሚማርበት ተቋም</label>
+            <input type="text" id="regSchool" placeholder="ለምሳሌ፦ AAU" maxlength="80">
+          </div>
+          <div class="form-field">
+            <label>መስክ / ክፍል</label>
+            <input type="text" id="regField" placeholder="ለምሳሌ፦ ምህንድስና" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>የግቢ ጉባኤ ክፍል</label>
+            <select id="regClass">
+              <option value="">-- ይምረጡ --</option>
+              <option value="መሠረታዊ">መሠረታዊ</option>
+              <option value="መካከለኛ">መካከለኛ</option>
+              <option value="ከፍተኛ">ከፍተኛ</option>
+              <option value="የቅዱሳት መጻሕፍት ጥናት">የቅዱሳት መጻሕፍት ጥናት</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>የትምህርት ሰዓት</label>
+            <select id="regSession">
+              <option value="">-- ይምረጡ --</option>
+              <option value="ጠዋት">ጠዋት</option>
+              <option value="ከሰዓት">ከሰዓት</option>
+              <option value="ምሽት">ምሽት</option>
+              <option value="ቅዳሜ">ቅዳሜ</option>
+              <option value="እሁድ">እሁድ</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>የተመደበ መምህር <span class="req">*</span></label>
+            <select id="regTeacher">
+              <option value="">-- መምህር ይምረጡ --</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>ማስታወሻ</label>
+            <textarea id="regNote" placeholder="ተጨማሪ መረጃ..." maxlength="200" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="registerStudent()">✅ ተማሪ መዝግብ</button>
+          <button class="btn btn-ghost" onclick="clearRegisterForm()">🧹 አጽዳ</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📋 የተማሪዎች ዝርዝር</h3>
+        <div class="filters">
+          <div class="form-field">
+            <label>ፈልግ</label>
+            <input type="text" id="searchStudent" placeholder="ስም/መታወቂያ/ስልክ" oninput="renderStudents()">
+          </div>
+          <div class="form-field">
+            <label>ደረጃ</label>
+            <select id="filterEdu" onchange="renderStudents()">
+              <option value="">ሁሉም</option>
+              <option value="አንደኛ ደረጃ">አንደኛ ደረጃ</option>
+              <option value="ሁለተኛ ደረጃ">ሁለተኛ ደረጃ</option>
+              <option value="ዩኒቨርሲቲ">ዩኒቨርሲቲ</option>
+              <option value="ኮሌጅ">ኮሌጅ</option>
+              <option value="ሙያ">ሙያ</option>
+              <option value="ሌላ">ሌላ</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>መምህር</label>
+            <select id="filterTeacher" onchange="renderStudents()">
+              <option value="">ሁሉም</option>
+              <option value="assigned">የተመደበ</option>
+              <option value="unassigned">ያልተመደበ</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+          <button class="btn btn-gold btn-sm" onclick="exportStudentsCSV()">📥 CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="printStudents()">🖨️ አትም</button>
+        </div>
+        <div class="table-wrap">
+          <table id="studentsTable">
+            <thead>
+              <tr><th>መታወቂያ</th><th>ሙሉ ስም</th><th>ጾታ</th><th>ደረጃ</th><th>ስልክ</th><th>መምህር</th><th>ሁኔታ</th><th>ተግባር</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: TEACHERS ===== -->
+    <div id="page-teachers" class="page">
+      <h2 class="page-title">👨‍🏫 መምህራን</h2>
+      <p class="page-sub">የመምህራን ምዝገባ፣ ዝርዝርና ለተማሪዎች ምደባ።</p>
+
+      <div class="card">
+        <h3>➕ አዲስ መምህር መዝግብ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ሙሉ ስም <span class="req">*</span></label>
+            <input type="text" id="tFullName" placeholder="መምህር ሙሉ ስም" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>ስልክ <span class="req">*</span></label>
+            <input type="tel" id="tPhone" placeholder="+251 9XX XXX XXX" maxlength="20">
+          </div>
+          <div class="form-field">
+            <label>ኢሜይል</label>
+            <input type="email" id="tEmail" placeholder="email@example.com" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>ሚና</label>
+            <select id="tRole">
+              <option value="">-- ይምረጡ --</option>
+              <option value="የቅዱሳት መጻሕፍት ጥናት">የቅዱሳት መጻሕፍት ጥናት</option>
+              <option value="የሥርዓተ ቤተ ክርስቲያን">የሥርዓተ ቤተ ክርስቲያን</option>
+              <option value="የኬማ">የኬማ</option>
+              <option value="የመዝሙር">የመዝሙር</option>
+              <option value="መንፈሳዊ አማካሪ">መንፈሳዊ አማካሪ</option>
+              <option value="አጠቃላይ">አጠቃላይ</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>አድራሻ</label>
+            <input type="text" id="tAddress" placeholder="አካባቢ / ከተማ" maxlength="100">
+          </div>
+          <div class="form-field full">
+            <label>የሚያስተምራቸው ክፍሎች</label>
+            <input type="text" id="tClasses" placeholder="ለምሳሌ፦ መሠረታዊ፣ ከፍተኛ" maxlength="100">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="registerTeacher()">✅ መምህር መዝግብ</button>
+          <button class="btn btn-ghost" onclick="clearTeacherForm()">🧹 አጽዳ</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📋 የተመዘገቡ መምህራን</h3>
+        <div class="table-wrap">
+          <table id="teachersTable">
+            <thead>
+              <tr><th>መለያ</th><th>ሙሉ ስም</th><th>ስልክ</th><th>ሚና</th><th>የተመደቡ ተማሪዎች</th><th>ተግባር</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: LESSON PLANS ===== -->
+    <div id="page-lesson-plans" class="page">
+      <h2 class="page-title">📜 ደንብ / ሰነድ</h2>
+      <p class="page-sub">የግቢ ጉባኤው ደንቦች፣ መመሪያዎችና ሰነዶች።</p>
+
+      <div class="card">
+        <h3>📜 የተመዘገቡ ሰነዶች</h3>
+        <div id="docsList"></div>
+      </div>
+
+      <div class="card">
+        <h3>➕ አዲስ ሰነድ ጨምር</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ርዕስ <span class="req">*</span></label>
+            <input type="text" id="docTitle" placeholder="ለምሳሌ፦ የግቢ ጉባኤ ደንብ" maxlength="80">
+          </div>
+          <div class="form-field">
+            <label>ዓይነት</label>
+            <select id="docType">
+              <option value="ደንብ">ደንብ</option>
+              <option value="መመሪያ">መመሪያ</option>
+              <option value="ሰነድ">ሰነድ</option>
+              <option value="ውሳኔ">ውሳኔ</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>ይዘት / አጭር መግለጫ</label>
+            <textarea id="docBody" placeholder="የሰነዱ ይዘት..." maxlength="500" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addDoc()">✅ ጨምር</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: MEDIA ===== -->
+    <div id="page-media" class="page">
+      <h2 class="page-title">🎧 ትምህርቶች (ኦዲዮ/ቪዲዮ)</h2>
+      <p class="page-sub">የተቀዱ ትምህርቶች፣ ስብከቶችና የመምህራን ትምህርቶች።</p>
+
+      <div class="resource-grid" id="mediaGrid"></div>
+
+      <div class="card">
+        <h3>➕ አዲስ ትምህርት ጨምር</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ርዕስ <span class="req">*</span></label>
+            <input type="text" id="mediaTitle" placeholder="የትምህርቱ ርዕስ" maxlength="80">
+          </div>
+          <div class="form-field">
+            <label>መምህር</label>
+            <input type="text" id="mediaTeacher" placeholder="የመምህሩ ስም" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>ዓይነት</label>
+            <select id="mediaType">
+              <option value="audio">🎧 ኦዲዮ</option>
+              <option value="video">🎬 ቪዲዮ</option>
+              <option value="pdf">📄 PDF</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>ሊንክ (URL)</label>
+            <input type="url" id="mediaUrl" placeholder="https://..." maxlength="300">
+          </div>
+          <div class="form-field full">
+            <label>መግለጫ</label>
+            <textarea id="mediaDesc" placeholder="ስለ ትምህርቱ..." maxlength="200" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addMedia()">✅ ጨምር</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: ROSTER ===== -->
+    <div id="page-roster" class="page">
+      <h2 class="page-title">📋 ሮስተር (የትምህርት ክፍል)</h2>
+      <p class="page-sub">በየክፍሉ የሚገኙ ተማሪዎች፣ መምህራንና የጊዜ ሰሌዳ።</p>
+
+      <div class="card">
+        <h3>📅 የጊዜ ሰሌዳ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ቀን</label>
+            <select id="rosDay">
+              <option value="ሰኞ">ሰኞ</option>
+              <option value="ማክሰኞ">ማክሰኞ</option>
+              <option value="ረቡዕ">ረቡዕ</option>
+              <option value="ሐሙስ">ሐሙስ</option>
+              <option value="ዓርብ">ዓርብ</option>
+              <option value="ቅዳሜ">ቅዳሜ</option>
+              <option value="እሁድ">እሁድ</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>ሰዓት</label>
+            <input type="text" id="rosTime" placeholder="ለምሳሌ፦ 09:00 - 10:30">
+          </div>
+          <div class="form-field">
+            <label>ክፍል</label>
+            <select id="rosClass">
+              <option value="መሠረታዊ">መሠረታዊ</option>
+              <option value="መካከለኛ">መካከለኛ</option>
+              <option value="ከፍተኛ">ከፍተኛ</option>
+              <option value="የቅዱሳት መጻሕፍት ጥናት">የቅዱሳት መጻሕፍት ጥናት</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>መምህር</label>
+            <input type="text" id="rosTeacher" placeholder="የመምህሩ ስም" maxlength="60">
+          </div>
+          <div class="form-field full">
+            <label>የትምህርቱ ርዕስ</label>
+            <input type="text" id="rosTopic" placeholder="የትምህርቱ ርዕስ" maxlength="100">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addRoster()">✅ ጨምር</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📋 የጊዜ ሰሌዳ ዝርዝር</h3>
+        <div class="table-wrap">
+          <table id="rosterTable">
+            <thead>
+              <tr><th>ቀን</th><th>ሰዓት</th><th>ክፍል</th><th>መምህር</th><th>ርዕስ</th><th>ተግባር</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: GRADES ===== -->
+    <div id="page-grades" class="page">
+      <h2 class="page-title">📊 ውጤት/ነጥብ መዝገብ</h2>
+      <p class="page-sub">የተማሪዎችን ውጤት ይመዝግቡ፣ ያርትዑና ሪፖርት ያውጡ።</p>
+
+      <div class="card">
+        <h3>➕ አዲስ ውጤት መዝግብ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ተማሪ <span class="req">*</span></label>
+            <select id="gradeStudent">
+              <option value="">-- ተማሪ ይምረጡ --</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>የትምህርት ዓይነት <span class="req">*</span></label>
+            <select id="gradeSubject">
+              <option value="">-- ይምረጡ --</option>
+              <option value="የቅዱሳት መጻሕፍት ጥናት">የቅዱሳት መጻሕፍት ጥናት</option>
+              <option value="የሥርዓተ ቤተ ክርስቲያን">የሥርዓተ ቤተ ክርስቲያን</option>
+              <option value="የኬማ">የኬማ</option>
+              <option value="የመዝሙር">የመዝሙር</option>
+              <option value="የኦርቶዶክስ ትምህርት">የኦርቶዶክስ ትምህርት</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>የፈተና ዓይነት</label>
+            <select id="gradeExamType">
+              <option value="ሩብ ዓመት">ሩብ ዓመት</option>
+              <option value="ግማሽ ዓመት">ግማሽ ዓመት</option>
+              <option value="ዓመታዊ">ዓመታዊ</option>
+              <option value="መደበኛ">መደበኛ</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>ነጥብ (ከ100) <span class="req">*</span></label>
+            <input type="number" id="gradeScore" min="0" max="100" placeholder="0-100">
+          </div>
+          <div class="form-field">
+            <label>ቀን</label>
+            <input type="date" id="gradeDate">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addGrade()">✅ መዝግብ</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📋 የውጤት ዝርዝር</h3>
+        <div class="filters">
+          <div class="form-field">
+            <label>ፈልግ</label>
+            <input type="text" id="gradeSearch" placeholder="ተማሪ ስም" oninput="renderGrades()">
+          </div>
+          <div class="form-field">
+            <label>ዓይነት</label>
+            <select id="gradeFilterSubject" onchange="renderGrades()">
+              <option value="">ሁሉም</option>
+              <option value="የቅዱሳት መጻሕፍት ጥናት">የቅዱሳት መጻሕፍት ጥናት</option>
+              <option value="የሥርዓተ ቤተ ክርስቲያን">የሥርዓተ ቤተ ክርስቲያን</option>
+              <option value="የኬማ">የኬማ</option>
+              <option value="የመዝሙር">የመዝሙር</option>
+              <option value="የኦርቶዶክስ ትምህርት">የኦርቶዶክስ ትምህርት</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="gradesTable">
+            <thead>
+              <tr><th>ተማሪ</th><th>ዓይነት</th><th>ፈተና</th><th>ነጥብ</th><th>ደረጃ</th><th>ቀን</th><th>ተግባር</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: ID CARDS ===== -->
+    <div id="page-idcards" class="page">
+      <h2 class="page-title">🪪 መታወቂያ ካርድ</h2>
+      <p class="page-sub">የተማሪ መታወቂያ ይፍጠሩ፣ ያትሙ ወይም ያውርዱ።</p>
+
+      <div class="card">
+        <h3>🎫 ተማሪ ይምረጡ</h3>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label>ተማሪ</label>
+            <select id="idStudentSelect" onchange="previewIdCard()">
+              <option value="">-- ተማሪ ይምረጡ --</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:20px 0;">
+        <div id="idPreviewContainer">
+          <div class="empty">
+            <div class="empty-icon">🪪</div>
+            <p>መታወቂያ ለማየት ተማሪ ይምረጡ</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn btn-primary" onclick="printIdCard()">🖨️ አትም</button>
+        <button class="btn btn-gold" onclick="generateAllIds()">📚 ሁሉንም አሳይ</button>
+      </div>
+
+      <div id="allIdsContainer" style="margin-top:30px;display:flex;flex-wrap:wrap;gap:20px;justify-content:center;"></div>
+    </div>
+
+    <!-- ===== PAGE: FORUM ===== -->
+    <div id="page-forum" class="page">
+      <h2 class="page-title">💬 የቡድን ውይይት</h2>
+      <p class="page-sub">መንፈሳዊ ትምህርት፣ የአመራር ልምድና የአገልግሎት ሀሳቦችን ያካፍሉ።</p>
+
+      <div class="card">
+        <h3>✍️ አዲስ ሀሳብ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ስም <span class="req">*</span></label>
+            <input type="text" id="postAuthor" placeholder="ስምዎ" maxlength="40">
+          </div>
+          <div class="form-field">
+            <label>ምድብ</label>
+            <select id="postTag">
+              <option value="መንፈሳዊ ትምህርት">📖 መንፈሳዊ ትምህርት</option>
+              <option value="አመራር">🎯 አመራር</option>
+              <option value="አስተዳደር">📋 አስተዳደር</option>
+              <option value="የአገልግሎት ልምድ">🙏 የአገልግሎት ልምድ</option>
+              <option value="ጥያቄ">❓ ጥያቄ</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>ሀሳብ <span class="req">*</span></label>
+            <textarea id="postBody" placeholder="ሀሳብዎን ይጻፉ..." maxlength="800" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addPost()">📤 አስተላልፍ</button>
+        </div>
+      </div>
+
+      <div id="postList"></div>
+    </div>
+
+    <!-- ===== PAGE: ANNOUNCEMENTS ===== -->
+    <div id="page-announcements" class="page">
+      <h2 class="page-title">📢 ህዝብ ግንኙነት / ሪፖርት</h2>
+      <p class="page-sub">ማስታወቂያዎች፣ ሪፖርቶችና ይፋዊ መልእክቶች።</p>
+
+      <div class="card">
+        <h3>➕ አዲስ ማስታወቂያ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ርዕስ <span class="req">*</span></label>
+            <input type="text" id="annTitle" placeholder="የማስታወቂያው ርዕስ" maxlength="100">
+          </div>
+          <div class="form-field">
+            <label>ዓይነት</label>
+            <select id="annType">
+              <option value="ማስታወቂያ">📢 ማስታወቂያ</option>
+              <option value="ሪፖርት">📊 ሪፖርት</option>
+              <option value="አስቸኳይ">⚠️ አስቸኳይ</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>ይዘት <span class="req">*</span></label>
+            <textarea id="annBody" placeholder="የማስታወቂያው ይዘት..." maxlength="500" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addAnnouncement()">✅ አስተላልፍ</button>
+        </div>
+      </div>
+
+      <div id="announcementsList"></div>
+    </div>
+
+    <!-- ===== PAGE: MESSAGES ===== -->
+    <div id="page-messages" class="page">
+      <h2 class="page-title">✉️ መልእክቶች</h2>
+      <p class="page-sub">የግል መልእክቶች፣ ጥያቄዎችና ምላሾች።</p>
+
+      <div class="card">
+        <h3>✉️ አዲስ መልእክት</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ከ <span class="req">*</span></label>
+            <input type="text" id="msgFrom" placeholder="የላኪው ስም" maxlength="40">
+          </div>
+          <div class="form-field">
+            <label>ለ <span class="req">*</span></label>
+            <input type="text" id="msgTo" placeholder="የተቀባዩ ስም" maxlength="40">
+          </div>
+          <div class="form-field full">
+            <label>መልእክት <span class="req">*</span></label>
+            <textarea id="msgBody" placeholder="መልእክትዎን ይጻፉ..." maxlength="500" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addMessage()">📤 ላክ</button>
+        </div>
+      </div>
+
+      <div id="messagesList"></div>
+    </div>
+
+    <!-- ===== PAGE: TASKS ===== -->
+    <div id="page-tasks" class="page">
+      <h2 class="page-title">📂 ሥራ ክትትል</h2>
+      <p class="page-sub">የተሰጡ ተግባራት፣ ኃላፊዎችና የመጨረሻ ቀኖች።</p>
+
+      <div class="card">
+        <h3>➕ አዲስ ተግባር</h3>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label>የተግባሩ ርዕስ <span class="req">*</span></label>
+            <input type="text" id="taskTitle" placeholder="የተግባሩ ርዕስ" maxlength="100">
+          </div>
+          <div class="form-field">
+            <label>ኃላፊ</label>
+            <input type="text" id="taskOwner" placeholder="የኃላፊ ስም" maxlength="60">
+          </div>
+          <div class="form-field">
+            <label>የመጨረሻ ቀን</label>
+            <input type="date" id="taskDeadline">
+          </div>
+          <div class="form-field">
+            <label>ሁኔታ</label>
+            <select id="taskStatus">
+              <option value="በሂደት">በሂደት</option>
+              <option value="ተጠናቅቋል">ተጠናቅቋል</option>
+              <option value="ዘግይቷል">ዘግይቷል</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>መግለጫ</label>
+            <textarea id="taskDesc" placeholder="የተግባሩ ዝርዝር..." maxlength="300" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addTask()">✅ ጨምር</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📋 የተግባራት ዝርዝር</h3>
+        <div class="table-wrap">
+          <table id="tasksTable">
+            <thead>
+              <tr><th>ርዕስ</th><th>ኃላፊ</th><th>የመጨረሻ ቀን</th><th>ሁኔታ</th><th>ተግባር</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: FEEDBACK ===== -->
+    <div id="page-feedback" class="page">
+      <h2 class="page-title">🔄 መረጃ ልውውጥ</h2>
+      <p class="page-sub">የአባላት አስተያየት፣ ጥያቄና ምላሽ።</p>
+
+      <div class="card">
+        <h3>➕ አስተያየት ይስጡ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ስም <span class="req">*</span></label>
+            <input type="text" id="fbName" placeholder="ስምዎ" maxlength="40">
+          </div>
+          <div class="form-field">
+            <label>ዓይነት</label>
+            <select id="fbType">
+              <option value="አስተያየት">💭 አስተያየት</option>
+              <option value="ጥያቄ">❓ ጥያቄ</option>
+              <option value="ቅሬታ">⚠️ ቅሬታ</option>
+              <option value="ምስጋና">🙏 ምስጋና</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>መልእክት <span class="req">*</span></label>
+            <textarea id="fbBody" placeholder="አስተያየትዎን ይጻፉ..." maxlength="500" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addFeedback()">📤 አስተላልፍ</button>
+        </div>
+      </div>
+
+      <div id="feedbackList"></div>
+    </div>
+
+    <!-- ===== PAGE: FEEDBACK2 ===== -->
+    <div id="page-feedback2" class="page">
+      <h2 class="page-title">🗣️ የግራ ውይይት</h2>
+      <p class="page-sub">ነጻ ውይይት፣ ሀሳብ ልውውጥና የቡድን ምክክር።</p>
+
+      <div class="card">
+        <h3>➕ አዲስ ርዕስ</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>ርዕስ <span class="req">*</span></label>
+            <input type="text" id="discTitle" placeholder="የውይይቱ ርዕስ" maxlength="100">
+          </div>
+          <div class="form-field">
+            <label>አስተዋጽኦ አድራጊ</label>
+            <input type="text" id="discAuthor" placeholder="ስምዎ" maxlength="40">
+          </div>
+          <div class="form-field full">
+            <label>ይዘት <span class="req">*</span></label>
+            <textarea id="discBody" placeholder="ሀሳብዎን ያካፍሉ..." maxlength="500" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addDiscussion()">📤 አስተላልፍ</button>
+        </div>
+      </div>
+
+      <div id="discussionsList"></div>
+    </div>
+
+    <!-- ===== PAGE: TOOLS ===== -->
+    <div id="page-tools" class="page">
+      <h2 class="page-title">🧰 መሳሪያዎች</h2>
+      <p class="page-sub">ጠቃሚ መሳሪያዎች፣ ካልኩሌተሮችና መቀየሪያዎች።</p>
+
+      <div class="resource-grid">
+        <div class="resource-card">
+          <div class="resource-icon">📅</div>
+          <h4>የቀን መቁጠሪያ</h4>
+          <p>የኢትዮጵያና የግሪጎሪያን ቀን መቀየሪያ</p>
+          <button class="btn btn-primary btn-sm" onclick="showToast('በቅርብ ጊዜ ይጨመራል', 'error')">ክፈት</button>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">🧮</div>
+          <h4>የውጤት ካልኩሌተር</h4>
+          <p>የተማሪዎችን አማካይ ነጥብ ማስላት</p>
+          <button class="btn btn-primary btn-sm" onclick="showToast('በቅርብ ጊዜ ይጨመራል', 'error')">ክፈት</button>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">📊</div>
+          <h4>የአቴንዳንስ ሪፖርት</h4>
+          <p>ወርሃዊ እና ዓመታዊ ሪፖርት ማውጣት</p>
+          <button class="btn btn-primary btn-sm" onclick="showToast('በቅርብ ጊዜ ይጨመራል', 'error')">ክፈት</button>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">📄</div>
+          <h4>የሰነድ አብነት</h4>
+          <p>የተለያዩ ሰነዶች አብነት (template)</p>
+          <button class="btn btn-primary btn-sm" onclick="showToast('በቅርብ ጊዜ ይጨመራል', 'error')">ክፈት</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: DOCS ===== -->
+    <div id="page-docs" class="page">
+      <h2 class="page-title">📄 ማረጋገጫ ሰነድ</h2>
+      <p class="page-sub">የተለያዩ ማረጋገጫዎችና የምስክር ወረቀቶች።</p>
+
+      <div class="resource-grid">
+        <div class="resource-card">
+          <div class="resource-icon">📜</div>
+          <h4>የተማሪነት ማረጋገጫ</h4>
+          <p>ለተማሪዎች የሚሰጥ ማረጋገጫ ደብዳቤ</p>
+          <button class="btn btn-primary btn-sm" onclick="generateCertificate('student')">🪪 ፍጠር</button>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">📜</div>
+          <h4>የመምህርነት ማረጋገጫ</h4>
+          <p>ለመምህራን የሚሰጥ ማረጋገጫ</p>
+          <button class="btn btn-primary btn-sm" onclick="generateCertificate('teacher')">🪪 ፍጠር</button>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">📜</div>
+          <h4>የአባልነት ማረጋገጫ</h4>
+          <p>ለአባላት የሚሰጥ ማረጋገጫ ደብዳቤ</p>
+          <button class="btn btn-primary btn-sm" onclick="generateCertificate('member')">🪪 ፍጠር</button>
+        </div>
+        <div class="resource-card">
+          <div class="resource-icon">📜</div>
+          <h4>የአገልግሎት ማረጋገጫ</h4>
+          <p>የአገልግሎት ጊዜ ማረጋገጫ ሰነድ</p>
+          <button class="btn btn-primary btn-sm" onclick="generateCertificate('service')">🪪 ፍጠር</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: REPORTS ===== -->
+    <div id="page-reports" class="page">
+      <h2 class="page-title">📤 ውጤት እና ማስመጣት</h2>
+      <p class="page-sub">ሁሉንም ውሂብ ማውጣት፣ ማስመጣትና ማጠራቀም።</p>
+
+      <div class="card">
+        <h3>☁️ ደመና ምትኬ እና የአባል መግቢያ</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">ይህ የግቢ ጉባኤው የራሱ ስክሪፕት ነው። አድራሻውና ሚስጥሩ በዚህ መሣሪያ ላይ ብቻ ይቀመጣሉ (ወደ ይፋዊው ኮድ አይገቡም)።</p>
+        <div class="form-grid">
+          <div class="form-field full"><label>የስክሪፕት አድራሻ (/exec)</label><input type="password" id="ggUrl" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="form-field full"><label>ADMIN_KEY (የአስተዳዳሪ ሚስጥር)</label><input type="password" id="ggKey" autocomplete="off"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" onclick="ggSaveCfg()">💾 አስቀምጥ</button>
+          <button class="btn btn-ghost btn-sm" onclick="ggTest()">🔌 ግንኙነት ፈትሽ</button>
+          <button class="btn btn-gold btn-sm" onclick="ggPush(true)">⬆️ ወደ ደመና ላክ</button>
+          <button class="btn btn-info btn-sm" onclick="ggPull(true)">⬇️ ከደመና መልስ</button>
+          <button class="btn btn-ghost btn-sm" onclick="ggPublish(true)">🌐 የአባላት መግቢያ አዘምን</button>
+          <button class="btn btn-ghost btn-sm" onclick="ggMemberLink()">🔗 የአባል መግቢያ ሊንክ ቅዳ</button>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:0.84rem;"><input type="checkbox" id="ggAuto" onchange="ggSaveCfg(true)"> ለውጥ ሲደረግ በራስ-ሰር ምትኬ ላክ</label>
+        <p id="ggStatus" style="font-size:0.8rem;color:var(--muted);margin-top:10px;"></p>
+      </div>
+
+      <div class="card">
+        <h3>📥 ውሂብ ማውጣት</h3>
+        <div class="resource-grid">
+          <div class="resource-card">
+            <div class="resource-icon">📊</div>
+            <h4>ሁሉንም ተማሪዎች (CSV)</h4>
+            <p>የተማሪዎችን ዝርዝር በCSV ማውረድ</p>
+            <button class="btn btn-gold btn-sm" onclick="exportStudentsCSV()">📥 አውርድ</button>
+          </div>
+          <div class="resource-card">
+            <div class="resource-icon">💾</div>
+            <h4>ሙሉ ውሂብ (JSON)</h4>
+            <p>ሁሉንም ውሂብ በJSON ማስቀመጥ</p>
+            <button class="btn btn-gold btn-sm" onclick="exportAllData()">💾 አስቀምጥ</button>
+          </div>
+          <div class="resource-card">
+            <div class="resource-icon">📤</div>
+            <h4>ውሂብ ማስመጣት</h4>
+            <p>ከJSON ፋይል ውሂብ መመለስ</p>
+            <label class="btn btn-info btn-sm" style="cursor:pointer;">
+              📤 ምረጥ
+              <input type="file" accept=".json" style="display:none;" onchange="importAllData(event)">
+            </label>
+          </div>
+          <div class="resource-card">
+            <div class="resource-icon">🗑️</div>
+            <h4>ሁሉንም አጥፋ</h4>
+            <p>ሁሉንም ውሂብ ማጥፋት (መመለስ አይቻልም)</p>
+            <button class="btn btn-danger btn-sm" onclick="resetAllData()">🗑️ አጥፋ</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📊 አጠቃላይ ስታቲስቲክስ</h3>
+        <div id="reportSummary"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ================= MODAL ================= -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">ርዕስ</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- ================= TOAST ================= -->
+<div class="toast" id="toast"></div>
+
+<footer>
+  <p><strong>የግቢ ጉባኤ ሙሉ ሲስተም</strong> — ስርዓት እና አመራር • ትምህርቶች • ግንኙነት • መሳሪያዎች</p>
+  <p style="margin-top:6px;">ሁሉም ውሂብ በአሳሽዎ ውስጥ በlocalStorage ይቀመጣል። ወቅታዊ ምትኬ ያድርጉ።</p>
+</footer>
+
+<script>
+/* =========================================================
+   STORAGE
+========================================================= */
+const KEY = 'gibi_gubae_complete_v1';
+
+function loadState(){
+  try{
+    const d = JSON.parse(localStorage.getItem(KEY));
+    if(d && d.students) return d;
+  }catch(e){}
+  return {
+    students: [],
+    teachers: [
+      {id:'TCH-001', name:'መምህር ገብረ ሚካኤል ተስፋዬ', phone:'+251 911 234 567', email:'gibre@example.com', role:'የቅዱሳት መጻሕፍት ጥናት', address:'አዲስ አበባ', classes:'መሠረታዊ፣ ከፍተኛ'},
+      {id:'TCH-002', name:'መምህር ማርያም ወርቁ', phone:'+251 922 345 678', email:'maryam@example.com', role:'የኬማ', address:'አዲስ አበባ', classes:'መካከለኛ'},
+      {id:'TCH-003', name:'መምህር ዮሐንስ አለሙ', phone:'+251 933 456 789', email:'yohannes@example.com', role:'የሥርዓተ ቤተ ክርስቲያን', address:'አዲስ አበባ', classes:'ሁሉም'}
+    ],
+    members: [],
+    attendance: [],
+    posts: defaultPosts(),
+    announcements: [],
+    messages: [],
+    tasks: [],
+    feedback: [],
+    discussions: [],
+    docs: [],
+    media: [],
+    roster: [],
+    grades: [],
+    structures: [],
+    counters: { student: 0, teacher: 3, member: 0 }
+  };
+}
+
+function defaultPosts(){
+  return [
+    {
+      id: 1,
+      author: 'ወንድም በረከት',
+      tag: 'መንፈሳዊ ትምህርት',
+      body: 'የዚህ ሳምንት ትምህርት ስለ አገልጋይነት ነበር። "ማንም ቢሆን ሁሉን በፍቅር ያድርግ" የሚለው ንባብ በጣም ነክቶኛል። እናንተስ እንዴት ተረዳችሁት?',
+      likes: 12, liked: false,
+      time: Date.now() - 3600000 * 5,
+      replies: [
+        {author:'ወይዘሮ ማርያም', body:'እኔም በጣም ተመችቶኛል። ፍቅር ያለው አገልግሎት ውጤታማ ነው።'},
+        {author:'ወንድም ዮሐንስ', body:'እንዲሁም ትዕግስት ያስፈልጋል ብዬ አስባለሁ።'}
+      ]
+    }
+  ];
+}
+
+let state = loadState();
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+/* =========================================================
+   PAGE NAVIGATION
+========================================================= */
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+  const page = document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+  if(el) el.classList.add('active');
+
+  // Render on demand
+  if(id==='dashboard') renderDashboard();
+  if(id==='structure') renderStructures();
+  if(id==='attendance') { document.getElementById('attDate').value = todayStr(); renderAttendance(); }
+  if(id==='members') renderMembers();
+  if(id==='students') renderStudents();
+  if(id==='teachers') renderTeachers();
+  if(id==='lesson-plans') renderDocs();
+  if(id==='media') renderMedia();
+  if(id==='roster') renderRoster();
+  if(id==='grades') { renderGrades(); populateStudentSelects(); }
+  if(id==='idcards') renderIdSelects();
+  if(id==='forum') renderPosts();
+  if(id==='announcements') renderAnnouncements();
+  if(id==='messages') renderMessages();
+  if(id==='tasks') renderTasks();
+  if(id==='feedback') renderFeedback();
+  if(id==='feedback2') renderDiscussions();
+  if(id==='reports') renderReportSummary();
+
+  // Mobile: close sidebar
+  if(window.innerWidth < 900) document.getElementById('sidebar').style.display='none';
+}
+
+function showPageById(id){
+  const items = document.querySelectorAll('.menu-item');
+  let target = null;
+  items.forEach(m=>{
+    const onclick = m.getAttribute('onclick') || '';
+    if(onclick.includes(`'${id}'`)) target = m;
+  });
+  showPage(id, target);
+}
+
+function toggleSidebar(){
+  const sb = document.getElementById('sidebar');
+  sb.style.display = sb.style.display === 'none' ? 'block' : 'none';
+}
+
+/* =========================================================
+   TOAST
+========================================================= */
+let toastTimer;
+function showToast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type==='error'?'error':type==='success'?'success':'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className = 'toast'; }, 3000);
+}
+
+/* =========================================================
+   UTILS
+========================================================= */
+function esc(s){
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function genId(prefix, n){ return prefix + '-' + String(n).padStart(4,'0'); }
+function getInitials(name){
+  if(!name) return '?';
+  const p = name.trim().split(/\s+/);
+  return p.length === 1 ? p[0].charAt(0) : p[0].charAt(0) + p[p.length-1].charAt(0);
+}
+function formatDate(d){
+  if(!d) return '—';
+  return new Date(d).toLocaleDateString('am-ET', {year:'numeric', month:'short', day:'numeric'});
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function timeAgo(ts){
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff/60000);
+  if(m < 1) return 'አሁን';
+  if(m < 60) return `${m} ደቂቃ በፊት`;
+  const h = Math.floor(m/60);
+  if(h < 24) return `${h} ሰዓት በፊት`;
+  const d = Math.floor(h/24);
+  if(d < 7) return `${d} ቀን በፊት`;
+  return formatDate(ts);
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function renderDashboard(){
+  const totalStudents = state.students.length;
+  const totalTeachers = state.teachers.length;
+  const totalMembers = state.members.length;
+  const totalAnnouncements = state.announcements.length;
+  const totalTasks = state.tasks.filter(t=>t.status==='በሂደት').length;
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${totalStudents}</div><div class="stat-label">📕 ተማሪዎች</div></div>
+    <div class="stat-card gold"><div class="stat-num">${totalTeachers}</div><div class="stat-label">👨‍🏫 መምህራን</div></div>
+    <div class="stat-card info"><div class="stat-num">${totalMembers}</div><div class="stat-label">👥 አባላት</div></div>
+    <div class="stat-card purple"><div class="stat-num">${totalAnnouncements}</div><div class="stat-label">📢 ማስታወቂያ</div></div>
+    <div class="stat-card danger"><div class="stat-num">${totalTasks}</div><div class="stat-label">📂 ንቁ ተግባራት</div></div>
+  `;
+
+  const anns = state.announcements.slice(0,3);
+  document.getElementById('dashAnnouncements').innerHTML = anns.length === 0
+    ? '<p class="empty" style="padding:20px;">እስካሁን ማስታወቂያ የለም።</p>'
+    : anns.map(a=>`
+        <div class="announce">
+          <div class="announce-icon">${a.type==='አስቸኳይ'?'⚠️':a.type==='ሪፖርት'?'📊':'📢'}</div>
+          <div class="announce-content">
+            <div class="announce-title">${esc(a.title)}</div>
+            <div class="announce-body">${esc(a.body)}</div>
+            <div class="announce-meta">${timeAgo(a.time)}</div>
+          </div>
+        </div>
+      `).join('');
+
+  document.getElementById('dashRecent').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
+      <div style="padding:10px;background:#f8fbf9;border-radius:8px;">
+        <div style="font-size:0.75rem;color:var(--muted);">📕 የተመዘገቡ ተማሪዎች</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--primary);">${state.students.length}</div>
+      </div>
+      <div style="padding:10px;background:#f8fbf9;border-radius:8px;">
+        <div style="font-size:0.75rem;color:var(--muted);">📅 የአቴንዳንስ መዝገቦች</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--primary);">${state.attendance.length}</div>
+      </div>
+      <div style="padding:10px;background:#f8fbf9;border-radius:8px;">
+        <div style="font-size:0.75rem;color:var(--muted);">📊 ውጤቶች</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--primary);">${state.grades.length}</div>
+      </div>
+      <div style="padding:10px;background:#f8fbf9;border-radius:8px;">
+        <div style="font-size:0.75rem;color:var(--muted);">💬 ውይይቶች</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--primary);">${state.posts.length + state.discussions.length}</div>
+      </div>
+    </div>
+  `;
+  const lvMap = {};
+  state.students.forEach(s=>{ const k = s.eduLevel || 'ያልተገለጸ'; lvMap[k] = (lvMap[k]||0) + 1; });
+  const lvKeys = Object.keys(lvMap);
+  document.getElementById('dashLevels').innerHTML = lvKeys.length === 0
+    ? '<p class="empty" style="padding:20px;">እስካሁን የተመዘገበ ተማሪ የለም።</p>'
+    : '<div class="dash-levels">' + lvKeys.map(k=>`<div style="padding:10px;background:#f8fbf9;border-radius:8px;"><div style="font-size:0.75rem;color:var(--muted);">${esc(k)}</div><div style="font-size:1.2rem;font-weight:800;color:var(--primary);">${lvMap[k]}</div></div>`).join('') + '</div>';
+}
+
+/* =========================================================
+   STRUCTURE
+========================================================= */
+function renderStructures(){
+  const grid = document.getElementById('structureGrid');
+  const defaults = [
+    {name:'መንፈሳዊ አማካሪ', head:'—', phone:'—', desc:'መንፈሳዊ መመሪያና የትምህርት ይዘት ማጽደቅ'},
+    {name:'አመራር ኮሚቴ', head:'—', phone:'—', desc:'ዕቅዶችን ማስፈጸም፣ ሀብትን መፅጠጠር'},
+    {name:'ትምህርትና አገልግሎት ቡድን', head:'—', phone:'—', desc:'የትምህርት እቅድ፣ መምህራንና ክፍል ማስተባበር'},
+    {name:'ዕቅድና አስተዳደር ቡድን', head:'—', phone:'—', desc:'ስብሰባ፣ ቃለ ጉባኤ፣ ሪፖርት'},
+    {name:'ገንዘብና ንብረት', head:'—', phone:'—', desc:'በጀት፣ ደረሰኝ፣ የንብረት መዝገብ'},
+    {name:'አባላትና በጎ ፈቃድ', head:'—', phone:'—', desc:'የአባላት ተሳትፎ፣ ክስተት አደረጃጀት'}
+  ];
+  const all = [...defaults, ...state.structures];
+  grid.innerHTML = all.map(s=>`
+    <div class="resource-card">
+      <div class="resource-icon">🏛️</div>
+      <h4>${esc(s.name)}</h4>
+      <p>${esc(s.desc)}</p>
+      <div class="resource-meta">
+        <span>👤 ${esc(s.head||'—')}</span>
+        <span>📞 ${esc(s.phone||'—')}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addStructure(){
+  const name = document.getElementById('structName').value.trim();
+  if(!name){ showToast('የክፍሉ ስም ያስፈልጋል', 'error'); return; }
+  state.structures.push({
+    name,
+    head: document.getElementById('structHead').value.trim(),
+    phone: document.getElementById('structPhone').value.trim(),
+    desc: document.getElementById('structDesc').value.trim()
+  });
+  save();
+  ['structName','structHead','structPhone','structDesc'].forEach(id=>document.getElementById(id).value='');
+  renderStructures();
+  showToast('ክፍሉ ተጨምሯል! ✅');
+}
+
+/* =========================================================
+   MEMBERS
+========================================================= */
+function renderMembers(){
+  const tbody = document.querySelector('#membersTable tbody');
+  const search = (document.getElementById('memSearch')?.value || '').toLowerCase();
+  const role = document.getElementById('memFilterRole')?.value || '';
+
+  let list = state.members;
+  if(search) list = list.filter(m=>m.name.toLowerCase().includes(search) || (m.phone||'').includes(search));
+  if(role) list = list.filter(m=>m.role===role);
+
+  if(list.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">ምንም አባል አልተገኘም።</td></tr>';
+  } else {
+    tbody.innerHTML = list.map(m=>`
+      <tr>
+        <td><span class="badge badge-gold">${esc(m.id)}</span></td>
+        <td>
+          <div class="user-cell">
+            <div class="avatar">${esc(getInitials(m.name))}</div>
+            <div class="name">${esc(m.name)}</div>
+          </div>
+        </td>
+        <td>${esc(m.phone)}</td>
+        <td><span class="badge badge-info">${esc(m.role)}</span></td>
+        <td>${esc(m.gender)}</td>
+        <td>${esc(m.address)||'—'}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑️</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  const total = state.members.length;
+  const heads = state.members.filter(m=>m.role==='ኃላፊ').length;
+  const teachers = state.members.filter(m=>m.role==='መምህር').length;
+  document.getElementById('memberStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">ጠቅላላ አባላት</div></div>
+    <div class="stat-card gold"><div class="stat-num">${heads}</div><div class="stat-label">ኃላፊዎች</div></div>
+    <div class="stat-card info"><div class="stat-num">${teachers}</div><div class="stat-label">መምህራን</div></div>
+  `;
+}
+
+function addMember(){
+  const name = document.getElementById('memName').value.trim();
+  const phone = document.getElementById('memPhone').value.trim();
+  if(!name){ showToast('ሙሉ ስም ያስፈልጋል', 'error'); return; }
+  if(!phone){ showToast('ስልክ ያስፈልጋል', 'error'); return; }
+
+  state.counters.member++;
+  state.members.push({
+    id: genId('MEM', state.counters.member),
+    name, phone,
+    role: document.getElementById('memRole').value,
+    gender: document.getElementById('memGender').value,
+    address: document.getElementById('memAddress').value.trim(),
+    registeredAt: new Date().toISOString()
+  });
+  save();
+  clearMemberForm();
+  renderMembers();
+  showToast('አባሉ ተመዝግቧል! ✅');
+}
+
+function clearMemberForm(){
+  ['memName','memPhone','memAddress'].forEach(id=>document.getElementById(id).value='');
+}
+
+function deleteMember(id){
+  if(!confirm('ይህን አባል ማጥፋት ይፈልጋሉ?')) return;
+  state.members = state.members.filter(m=>m.id!==id);
+  save();
+  renderMembers();
+  showToast('አባሉ ጠፍቷል', 'success');
+}
+
+/* =========================================================
+   STUDENTS
+========================================================= */
+function registerStudent(){
+  const fullName = document.getElementById('regFullName').value.trim();
+  const gender = document.getElementById('regGender').value;
+  const phone = document.getElementById('regPhone').value.trim();
+  const eduLevel = document.getElementById('regEduLevel').value;
+  const status = document.getElementById('regStatus').value;
+  const teacherId = document.getElementById('regTeacher').value;
+
+  if(!fullName){ showToast('ሙሉ ስም ያስፈልጋል', 'error'); return; }
+  if(!gender){ showToast('ጾታ ይምረጡ', 'error'); return; }
+  if(!phone){ showToast('ስልክ ያስፈልጋል', 'error'); return; }
+  if(!eduLevel){ showToast('የትምህርት ደረጃ ይምረጡ', 'error'); return; }
+  if(!status){ showToast('ሁኔታ ይምረጡ', 'error'); return; }
+
+  state.counters.student++;
+  const studentId = genId('GG', state.counters.student);
+  const teacher = teacherId ? state.teachers.find(t=>t.id===teacherId) : null;
+
+  const student = {
+    id: studentId, fullName,
+    fatherName: document.getElementById('regFather').value.trim(),
+    gender, dob: document.getElementById('regDob').value,
+    phone, parentPhone: document.getElementById('regParentPhone').value.trim(),
+    address: document.getElementById('regAddress').value.trim(),
+    email: document.getElementById('regEmail').value.trim(),
+    eduLevel, status,
+    school: document.getElementById('regSchool').value.trim(),
+    field: document.getElementById('regField').value.trim(),
+    class: document.getElementById('regClass').value,
+    session: document.getElementById('regSession').value,
+    note: document.getElementById('regNote').value.trim(),
+    teacherId: teacherId || '',
+    teacherName: teacher ? teacher.name : 'ያልተመደበ',
+    registeredAt: new Date().toISOString()
+  };
+
+  state.students.push(student);
+  save();
+  clearRegisterForm();
+  renderStudents();
+  populateStudentSelects();
+  updateHeaderStats();
+  showToast(`ተማሪው ተመዝግቧል! መታወቂያ: ${studentId}`, 'success');
+}
+
+function clearRegisterForm(){
+  ['regFullName','regFather','regDob','regPhone','regParentPhone','regAddress','regEmail','regSchool','regField','regNote']
+    .forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+  ['regGender','regEduLevel','regStatus','regClass','regSession','regTeacher']
+    .forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+}
+
+function getFilteredStudents(){
+  const search = (document.getElementById('searchStudent')?.value || '').toLowerCase().trim();
+  const edu = document.getElementById('filterEdu')?.value || '';
+  const tf = document.getElementById('filterTeacher')?.value || '';
+
+  return state.students.filter(s=>{
+    if(search && !(s.fullName.toLowerCase().includes(search) ||
+                    s.id.toLowerCase().includes(search) ||
+                    (s.phone||'').includes(search))) return false;
+    if(edu && s.eduLevel !== edu) return false;
+    if(tf === 'assigned' && !s.teacherId) return false;
+    if(tf === 'unassigned' && s.teacherId) return false;
+    return true;
+  });
+}
+
+function renderStudents(){
+  const tbody = document.querySelector('#studentsTable tbody');
+  if(!tbody) return;
+  const list = getFilteredStudents();
+
+  if(list.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">ምንም ተማሪ አልተገኘም።</td></tr>';
+  } else {
+    tbody.innerHTML = list.map(s=>`
+      <tr>
+        <td><span class="badge badge-gold">${esc(s.id)}</span></td>
+        <td>
+          <div class="user-cell">
+            <div class="avatar">${esc(getInitials(s.fullName))}</div>
+            <div>
+              <div class="name">${esc(s.fullName)}</div>
+              <div class="sub">${esc(s.gender)} • ${formatDate(s.dob)}</div>
+            </div>
+          </div>
+        </td>
+        <td>${esc(s.gender)}</td>
+        <td>${esc(s.eduLevel)}</td>
+        <td>${esc(s.phone)}</td>
+        <td>${s.teacherId ? `<span class="badge badge-success">${esc(s.teacherName)}</span>` : `<span class="badge badge-danger">ያልተመደበ</span>`}</td>
+        <td><span class="badge ${s.status==='በትምህርት ላይ'?'badge-success':s.status==='ተመርቋል'?'badge-info':'badge-warn'}">${esc(s.status)}</span></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="viewStudent('${s.id}')">👁️</button>
+          <button class="btn btn-gold btn-sm" onclick="editStudent('${s.id}')">✏️</button>
+          <button class="btn btn-primary btn-sm" onclick="showStudentId('${s.id}')">🪪</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">🗑️</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  const total = state.students.length;
+  const male = state.students.filter(s=>s.gender==='ወንድ').length;
+  const female = state.students.filter(s=>s.gender==='ሴት').length;
+  const unassigned = state.students.filter(s=>!s.teacherId).length;
+  const statsEl = document.getElementById('studentStats');
+  if(statsEl) statsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">ጠቅላላ</div></div>
+    <div class="stat-card info"><div class="stat-num">${male}</div><div class="stat-label">ወንድ</div></div>
+    <div class="stat-card gold"><div class="stat-num">${female}</div><div class="stat-label">ሴት</div></div>
+    <div class="stat-card danger"><div class="stat-num">${unassigned}</div><div class="stat-label">ያልተመደቡ</div></div>
+  `;
+}
+
+function viewStudent(id){
+  const s = state.students.find(x=>x.id===id);
+  if(!s) return;
+  showModal('👤 የተማሪ ዝርዝር', `
+    <div class="table-wrap"><table>
+      <tr><td><strong>መታወቂያ</strong></td><td>${esc(s.id)}</td></tr>
+      <tr><td><strong>ሙሉ ስም</strong></td><td>${esc(s.fullName)}</td></tr>
+      <tr><td><strong>የአባት ስም</strong></td><td>${esc(s.fatherName)||'—'}</td></tr>
+      <tr><td><strong>ጾታ</strong></td><td>${esc(s.gender)}</td></tr>
+      <tr><td><strong>የትውልድ ቀን</strong></td><td>${formatDate(s.dob)}</td></tr>
+      <tr><td><strong>ስልክ</strong></td><td>${esc(s.phone)}</td></tr>
+      <tr><td><strong>የወላጅ ስልክ</strong></td><td>${esc(s.parentPhone)||'—'}</td></tr>
+      <tr><td><strong>አድራሻ</strong></td><td>${esc(s.address)||'—'}</td></tr>
+      <tr><td><strong>ኢሜይል</strong></td><td>${esc(s.email)||'—'}</td></tr>
+      <tr><td><strong>ደረጃ</strong></td><td>${esc(s.eduLevel)}</td></tr>
+      <tr><td><strong>ሁኔታ</strong></td><td>${esc(s.status)}</td></tr>
+      <tr><td><strong>ተቋም</strong></td><td>${esc(s.school)||'—'}</td></tr>
+      <tr><td><strong>መስክ</strong></td><td>${esc(s.field)||'—'}</td></tr>
+      <tr><td><strong>ክፍል</strong></td><td>${esc(s.class)||'—'}</td></tr>
+      <tr><td><strong>ሰዓት</strong></td><td>${esc(s.session)||'—'}</td></tr>
+      <tr><td><strong>መምህር</strong></td><td>${esc(s.teacherName)}</td></tr>
+      <tr><td><strong>ማስታወሻ</strong></td><td>${esc(s.note)||'—'}</td></tr>
+    </table></div>
+  `);
+}
+
+function editStudent(id){
+  const s = state.students.find(x=>x.id===id);
+  if(!s) return;
+  const teacherOptions = '<option value="">🚫 ያልተመደበ</option>' +
+    state.teachers.map(t=>`<option value="${t.id}" ${s.teacherId===t.id?'selected':''}>${esc(t.name)}</option>`).join('');
+
+  showModal('✏️ ተማሪ አርትዕ', `
+    <div class="form-grid">
+      <div class="form-field"><label>ሙሉ ስም</label><input id="editFullName" value="${esc(s.fullName)}"></div>
+      <div class="form-field"><label>ስልክ</label><input id="editPhone" value="${esc(s.phone)}"></div>
+      <div class="form-field"><label>አድራሻ</label><input id="editAddress" value="${esc(s.address)}"></div>
+      <div class="form-field"><label>ኢሜይል</label><input id="editEmail" value="${esc(s.email)}"></div>
+      <div class="form-field"><label>ደረጃ</label>
+        <select id="editEdu">
+          ${['አንደኛ ደረጃ','ሁለተኛ ደረጃ','ዩኒቨርሲቲ','ኮሌጅ','ሙያ','ሌላ'].map(o=>`<option ${s.eduLevel===o?'selected':''}>${o}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-field"><label>ሁኔታ</label>
+        <select id="editStatus">
+          ${['በትምህርት ላይ','ተመርቋል','ለጊዜው አቁሟል'].map(o=>`<option ${s.status===o?'selected':''}>${o}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-field full"><label>መምህር</label>
+        <select id="editTeacher">${teacherOptions}</select>
+      </div>
+    </div>
+  `, `
+    <button class="btn btn-ghost" onclick="closeModal()">ሰርዝ</button>
+    <button class="btn btn-primary" onclick="saveEditStudent('${s.id}')">💾 አስቀምጥ</button>
+  `);
+}
+
+function saveEditStudent(id){
+  const s = state.students.find(x=>x.id===id);
+  if(!s) return;
+  s.fullName = document.getElementById('editFullName').value.trim();
+  s.phone = document.getElementById('editPhone').value.trim();
+  s.address = document.getElementById('editAddress').value.trim();
+  s.email = document.getElementById('editEmail').value.trim();
+  s.eduLevel = document.getElementById('editEdu').value;
+  s.status = document.getElementById('editStatus').value;
+  const tid = document.getElementById('editTeacher').value;
+  s.teacherId = tid;
+  const t = state.teachers.find(x=>x.id===tid);
+  s.teacherName = t ? t.name : 'ያልተመደበ';
+  save();
+  renderStudents();
+  closeModal();
+  showToast('ተስተካክሏል! ✅');
+}
+
+function deleteStudent(id){
+  if(!confirm('ይህን ተማሪ ማጥፋት ይፈልጋሉ?')) return;
+  state.students = state.students.filter(s=>s.id!==id);
+  save();
+  renderStudents();
+  populateStudentSelects();
+  updateHeaderStats();
+  showToast('ተማሪው ጠፍቷል', 'success');
+}
+
+/* =========================================================
+   TEACHERS
+========================================================= */
+function registerTeacher(){
+  const name = document.getElementById('tFullName').value.trim();
+  const phone = document.getElementById('tPhone').value.trim();
+  if(!name){ showToast('ሙሉ ስም ያስፈልጋል', 'error'); return; }
+  if(!phone){ showToast('ስልክ ያስፈልጋል', 'error'); return; }
+
+  state.counters.teacher++;
+  const id = genId('TCH', state.counters.teacher);
+  state.teachers.push({
+    id, name, phone,
+    email: document.getElementById('tEmail').value.trim(),
+    role: document.getElementById('tRole').value,
+    address: document.getElementById('tAddress').value.trim(),
+    classes: document.getElementById('tClasses').value.trim()
+  });
+  save();
+  clearTeacherForm();
+  renderTeachers();
+  populateTeacherSelects();
+  updateHeaderStats();
+  showToast(`መምህሩ ተመዝግቧል! ${id}`, 'success');
+}
+
+function clearTeacherForm(){
+  ['tFullName','tPhone','tEmail','tAddress','tClasses'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+  const r = document.getElementById('tRole'); if(r) r.value='';
+}
+
+function renderTeachers(){
+  const tbody = document.querySelector('#teachersTable tbody');
+  if(!tbody) return;
+  if(state.teachers.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">መምህር አልተመዘገበም።</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.teachers.map(t=>{
+    const count = state.students.filter(s=>s.teacherId===t.id).length;
+    return `
+      <tr>
+        <td><span class="badge badge-gold">${esc(t.id)}</span></td>
+        <td>
+          <div class="user-cell">
+            <div class="avatar">${esc(getInitials(t.name))}</div>
+            <div>
+              <div class="name">${esc(t.name)}</div>
+              <div class="sub">${esc(t.email)||'—'}</div>
+            </div>
+          </div>
+        </td>
+        <td>${esc(t.phone)}</td>
+        <td>${esc(t.role)||'—'}</td>
+        <td><span class="badge badge-info">${count} ተማሪ</span></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="viewTeacherStudents('${t.id}')">👥</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTeacher('${t.id}')">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function viewTeacherStudents(id){
+  const t = state.teachers.find(x=>x.id===id);
+  const students = state.students.filter(s=>s.teacherId===id);
+  showModal('👥 ' + t.name, students.length === 0
+    ? '<p class="empty">ተማሪ አልተመደበም።</p>'
+    : `<div class="table-wrap"><table>
+        <thead><tr><th>መታወቂያ</th><th>ስም</th><th>ደረጃ</th><th>ክፍል</th></tr></thead>
+        <tbody>${students.map(s=>`<tr><td>${esc(s.id)}</td><td>${esc(s.fullName)}</td><td>${esc(s.eduLevel)}</td><td>${esc(s.class)||'—'}</td></tr>`).join('')}</tbody>
+      </table></div>`);
+}
+
+function deleteTeacher(id){
+  if(!confirm('መምህሩን ማጥፋት ይፈልጋሉ? ተማሪዎች "ያልተመደበ" ይሆናሉ።')) return;
+  state.teachers = state.teachers.filter(t=>t.id!==id);
+  state.students.forEach(s=>{ if(s.teacherId===id){ s.teacherId=''; s.teacherName='ያልተመደበ'; } });
+  save();
+  renderTeachers();
+  renderStudents();
+  populateTeacherSelects();
+  updateHeaderStats();
+  showToast('መምህሩ ጠፍቷል', 'success');
+}
+
+function populateTeacherSelects(){
+  const sel = document.getElementById('regTeacher');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- መምህር ይምረጡ --</option>' +
+    '<option value="">🚫 ያልተመደበ</option>' +
+    state.teachers.map(t=>`<option value="${esc(t.id)}">${esc(t.name)} (${esc(t.role)||'—'})</option>`).join('');
+}
+
+/* =========================================================
+   ATTENDANCE
+========================================================= */
+let attTemp = {};
+
+function renderAttendance(){
+  const dateEl = document.getElementById('attDate');
+  if(dateEl && !dateEl.value) dateEl.value = todayStr();
+
+  const cls = document.getElementById('attClass')?.value || '';
+  const search = (document.getElementById('attSearch')?.value || '').toLowerCase();
+
+  let list = state.students;
+  if(cls) list = list.filter(s=>s.class===cls);
+  if(search) list = list.filter(s=>s.fullName.toLowerCase().includes(search) || s.id.toLowerCase().includes(search));
+
+  const grid = document.getElementById('attGrid');
+  if(!grid) return;
+  if(list.length === 0){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><div class="empty-icon">📭</div><p>ተማሪ አልተገኘም</p></div>';
+    renderAttendanceHistory();
+    return;
+  }
+
+  grid.innerHTML = list.map(s=>{
+    const st = attTemp[s.id] || '';
+    return `
+      <div class="att-item ${st==='present'?'present':st==='absent'?'absent':''}" onclick="cycleAttendance('${s.id}')">
+        <div class="att-check ${st==='present'?'p':st==='absent'?'a':''}">${st==='present'?'✓':st==='absent'?'✗':''}</div>
+        <div class="att-info">
+          <div class="n">${esc(s.fullName)}</div>
+          <div class="s">${esc(s.id)} • ${esc(s.class)||'—'}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  renderAttendanceHistory();
+}
+
+function cycleAttendance(id){
+  const cur = attTemp[id];
+  if(cur === 'present') attTemp[id] = 'absent';
+  else if(cur === 'absent') delete attTemp[id];
+  else attTemp[id] = 'present';
+  renderAttendance();
+}
+
+function markAllPresent(){
+  const cls = document.getElementById('attClass').value;
+  const search = (document.getElementById('attSearch').value || '').toLowerCase();
+  let list = state.students;
+  if(cls) list = list.filter(s=>s.class===cls);
+  if(search) list = list.filter(s=>s.fullName.toLowerCase().includes(search));
+  list.forEach(s=>attTemp[s.id]='present');
+  renderAttendance();
+  showToast(`${list.length} ተገኝተዋል ✅`, 'success');
+}
+
+function clearAttendance(){ attTemp = {}; renderAttendance(); }
+
+function saveAttendance(){
+  const date = document.getElementById('attDate').value;
+  const cls = document.getElementById('attClass').value || 'ሁሉም';
+  if(!date){ showToast('ቀን ይምረጡ', 'error'); return; }
+  if(Object.keys(attTemp).length === 0){ showToast('ምንም አልተመዘገበም', 'error'); return; }
+
+  let list = state.students;
+  if(cls !== 'ሁሉም') list = list.filter(s=>s.class===cls);
+  const filtered = list.filter(s=>attTemp[s.id]);
+  const present = filtered.filter(s=>attTemp[s.id]==='present').length;
+  const absent = filtered.filter(s=>attTemp[s.id]==='absent').length;
+
+  state.attendance.unshift({
+    id: 'ATT-' + Date.now(),
+    date, class: cls, present, absent, total: present + absent,
+    records: filtered.map(s=>({studentId:s.id, name:s.fullName, status:attTemp[s.id]}))
+  });
+  save();
+  attTemp = {};
+  renderAttendance();
+  showToast(`ተመዝግቧል! ${present} ተገኝተዋል፣ ${absent} ቀርተዋል`, 'success');
+}
+
+function renderAttendanceHistory(){
+  const tbody = document.querySelector('#attendanceHistory tbody');
+  if(!tbody) return;
+  if(state.attendance.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">አቴንዳንስ አልተመዘገበም።</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.attendance.slice(0,20).map(a=>{
+    const pct = a.total > 0 ? Math.round((a.present/a.total)*100) : 0;
+    return `
+      <tr>
+        <td>${formatDate(a.date)}</td>
+        <td>${esc(a.class)}</td>
+        <td><span class="badge badge-success">${a.present}</span></td>
+        <td><span class="badge badge-danger">${a.absent}</span></td>
+        <td><span class="badge badge-info">${pct}%</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteAttendance('${a.id}')">🗑️</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function deleteAttendance(id){
+  if(!confirm('አቴንዳንሱን ማጥፋት ይፈልጋሉ?')) return;
+  state.attendance = state.attendance.filter(a=>a.id!==id);
+  save();
+  renderAttendanceHistory();
+  showToast('ጠፍቷል', 'success');
+}
+
+/* =========================================================
+   ID CARDS
+========================================================= */
+function renderIdSelects(){
+  const sel = document.getElementById('idStudentSelect');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- ተማሪ ይምረጡ --</option>' +
+    state.students.map(s=>`<option value="${esc(s.id)}">${esc(s.id)} — ${esc(s.fullName)}</option>`).join('');
+}
+
+function buildIdCardHTML(s){
+  return `
+    <div class="id-card">
+      <div class="id-header">
+        <div class="cross">✝</div>
+        <div>
+          <h4>የግቢ ጉባኤ ትምህርት ክፍል</h4>
+          <p>Gibi Gubae Student ID Card</p>
+        </div>
+      </div>
+      <div class="id-body">
+        <div class="id-photo">👤</div>
+        <div class="id-info">
+          <div class="row"><div class="lbl">ሙሉ ስም</div><div class="val">${esc(s.fullName)}</div></div>
+          <div class="row"><div class="lbl">ጾታ</div><div class="val">${esc(s.gender)}</div></div>
+          <div class="row"><div class="lbl">ደረጃ</div><div class="val">${esc(s.eduLevel)}</div></div>
+          <div class="row"><div class="lbl">ክፍል</div><div class="val">${esc(s.class)||'—'}</div></div>
+        </div>
+      </div>
+      <div class="id-idnum">${esc(s.id)}</div>
+      <div class="id-footer">
+        ስልክ: ${esc(s.phone)} • የተመዘገበበት: ${formatDate(s.registeredAt)}
+      </div>
+    </div>
+  `;
+}
+
+function previewIdCard(){
+  const id = document.getElementById('idStudentSelect').value;
+  const container = document.getElementById('idPreviewContainer');
+  if(!id){
+    container.innerHTML = '<div class="empty"><div class="empty-icon">🪪</div><p>መታወቂያ ለማየት ተማሪ ይምረጡ</p></div>';
+    return;
+  }
+  const s = state.students.find(x=>x.id===id);
+  if(!s){ container.innerHTML = ''; return; }
+  container.innerHTML = buildIdCardHTML(s);
+}
+
+function showStudentId(id){
+  const s = state.students.find(x=>x.id===id);
+  if(!s) return;
+  showModal('🪪 የተማሪ መታወቂያ', `<div style="display:flex;justify-content:center;">${buildIdCardHTML(s)}</div>`,
+    `<button class="btn btn-primary" onclick="printIdCardFor('${s.id}')">🖨️ አትም</button>
+     <button class="btn btn-ghost" onclick="closeModal()">ዝጋ</button>`);
+}
+
+function printIdCard(){
+  const id = document.getElementById('idStudentSelect')?.value;
+  if(!id){ showToast('ተማሪ ይምረጡ', 'error'); return; }
+  printIdCardFor(id);
+}
+
+function printIdCardFor(id){
+  const s = state.students.find(x=>x.id===id);
+  if(!s){ showToast('ተማሪ አልተገኘም', 'error'); return; }
+  const w = window.open('', '_blank', 'width=500,height=400');
+  w.document.write(`
+    <html><head><title>መታወቂያ — ${esc(s.fullName)}</title>
+    <style>
+      body{font-family:'Noto Sans Ethiopic',sans-serif;padding:20px;display:flex;justify-content:center;}
+      .id-card{background:#fff;border:3px solid #1a4d2e;border-radius:16px;width:340px;overflow:hidden;}
+      .id-header{background:linear-gradient(135deg,#1a4d2e,#2d7a4f);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px;}
+      .id-header .cross{width:36px;height:36px;background:#c9a227;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#1a4d2e;font-weight:bold;}
+      .id-header h4{font-size:0.92rem;line-height:1.3;margin:0;}
+      .id-header p{font-size:0.68rem;opacity:0.9;margin:0;}
+      .id-body{padding:16px;display:flex;gap:14px;}
+      .id-photo{width:76px;height:96px;border:2px solid #d9e2db;border-radius:8px;background:#f0f5f1;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#6b7c72;flex-shrink:0;}
+      .id-info{flex:1;font-size:0.8rem;}
+      .id-info .row{margin-bottom:5px;}
+      .id-info .lbl{color:#6b7c72;font-size:0.68rem;font-weight:600;}
+      .id-info .val{color:#1e2a22;font-weight:700;}
+      .id-idnum{background:#c9a227;color:#1a4d2e;padding:8px 14px;text-align:center;font-weight:800;font-size:0.92rem;letter-spacing:1.5px;font-family:'Courier New',monospace;}
+      .id-footer{background:#f0f5f1;padding:10px 18px;font-size:0.66rem;color:#6b7c72;text-align:center;border-top:1px dashed #d9e2db;}
+    </style></head><body>${buildIdCardHTML(s)}
+    <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500);}<\/script>
+    </body></html>
+  `);
+  w.document.close();
+}
+
+function generateAllIds(){
+  const c = document.getElementById('allIdsContainer');
+  if(!c) return;
+  if(state.students.length === 0){
+    c.innerHTML = '<p class="empty">ተማሪ አልተመዘገበም</p>';
+    return;
+  }
+  c.innerHTML = state.students.map(s=>buildIdCardHTML(s)).join('');
+  showToast(`${state.students.length} መታወቂያዎች ተፈጥረዋል`, 'success');
+}
+
+/* =========================================================
+   POSTS (FORUM)
+========================================================= */
+function renderPosts(){
+  const c = document.getElementById('postList');
+  if(!c) return;
+  if(state.posts.length === 0){
+    c.innerHTML = '<div class="card empty">ምንም ሀሳብ አልተለጠፈም።</div>';
+    return;
+  }
+  c.innerHTML = state.posts.map(p=>`
+    <div class="card">
+      <div class="post-header" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-weight:700;color:var(--primary);">👤 ${esc(p.author)}</div>
+          <div style="font-size:0.78rem;color:var(--muted);">${timeAgo(p.time)} • <span class="badge badge-gold">${esc(p.tag)}</span></div>
+        </div>
+      </div>
+      <div style="margin:10px 0;">${esc(p.body)}</div>
+      <div style="display:flex;gap:12px;padding-top:10px;border-top:1px solid var(--border);font-size:0.85rem;">
+        <button style="background:none;border:none;cursor:pointer;color:${p.liked?'var(--gold)':'var(--muted)'};font-weight:600;" onclick="toggleLike(${p.id})">${p.liked?'❤️':'🤍'} ${p.likes}</button>
+        <button style="background:none;border:none;cursor:pointer;color:var(--muted);font-weight:600;" onclick="toggleReplyForm(${p.id})">💬 መልስ</button>
+      </div>
+      ${(p.replies||[]).map(r=>`<div class="reply" style="background:#f8fbf9;border-left:3px solid var(--gold-light);padding:10px 14px;border-radius:0 8px 8px 0;margin-top:10px;font-size:0.88rem;"><strong style="color:var(--primary-light);">${esc(r.author)}:</strong> ${esc(r.body)}</div>`).join('')}
+      <div class="reply-form" id="replyForm-${p.id}" style="display:none;gap:8px;margin-top:10px;">
+        <input type="text" id="replyName-${p.id}" placeholder="ስምዎ" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;">
+        <input type="text" id="replyBody-${p.id}" placeholder="መልስዎ..." style="flex:2;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;">
+        <button class="btn btn-gold btn-sm" onclick="addReply(${p.id})">ላክ</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addPost(){
+  const author = document.getElementById('postAuthor').value.trim();
+  const tag = document.getElementById('postTag').value;
+  const body = document.getElementById('postBody').value.trim();
+  if(!author){ showToast('ስም ያስፈልጋል', 'error'); return; }
+  if(!body){ showToast('ሀሳብ ያስፈልጋል', 'error'); return; }
+  state.posts.unshift({id: Date.now(), author, tag, body, likes:0, liked:false, time: Date.now(), replies: []});
+  save();
+  renderPosts();
+  document.getElementById('postBody').value = '';
+  showToast('ተለጠፈ! ✅');
+}
+
+function toggleLike(id){
+  const p = state.posts.find(x=>x.id===id);
+  if(!p) return;
+  if(p.liked){ p.likes--; p.liked=false; } else { p.likes++; p.liked=true; }
+  save();
+  renderPosts();
+}
+
+function toggleReplyForm(id){
+  const f = document.getElementById('replyForm-'+id);
+  f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+}
+
+function addReply(id){
+  const name = document.getElementById('replyName-'+id).value.trim();
+  const body = document.getElementById('replyBody-'+id).value.trim();
+  if(!name || !body){ showToast('ስምና መልስ ያስፈልጋል', 'error'); return; }
+  const p = state.posts.find(x=>x.id===id);
+  p.replies = p.replies || [];
+  p.replies.push({author:name, body});
+  save();
+  renderPosts();
+}
+
+/* =========================================================
+   ANNOUNCEMENTS
+========================================================= */
+function addAnnouncement(){
+  const title = document.getElementById('annTitle').value.trim();
+  const body = document.getElementById('annBody').value.trim();
+  if(!title || !body){ showToast('ርዕስና ይዘት ያስፈልጋሉ', 'error'); return; }
+  state.announcements.unshift({
+    id: 'ANN-' + Date.now(),
+    title, body,
+    type: document.getElementById('annType').value,
+    time: Date.now()
+  });
+  save();
+  document.getElementById('annTitle').value = '';
+  document.getElementById('annBody').value = '';
+  renderAnnouncements();
+  showToast('ማስታወቂያ ተለጠፈ! 📢', 'success');
+}
+
+function renderAnnouncements(){
+  const c = document.getElementById('announcementsList');
+  if(!c) return;
+  if(state.announcements.length === 0){
+    c.innerHTML = '<div class="card empty">ማስታወቂያ የለም።</div>';
+    return;
+  }
+  c.innerHTML = state.announcements.map(a=>`
+    <div class="announce">
+      <div class="announce-icon">${a.type==='አስቸኳይ'?'⚠️':a.type==='ሪፖርት'?'📊':'📢'}</div>
+      <div class="announce-content">
+        <div class="announce-title">${esc(a.title)}</div>
+        <div class="announce-body">${esc(a.body)}</div>
+        <div class="announce-meta">${timeAgo(a.time)} • <span class="badge badge-gold">${esc(a.type)}</span>
+          <button class="btn btn-danger btn-sm" style="margin-left:10px;padding:2px 8px;font-size:0.7rem;" onclick="deleteAnnouncement('${a.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteAnnouncement(id){
+  if(!confirm('ማስታወቂያውን ማጥፋት ይፈልጋሉ?')) return;
+  state.announcements = state.announcements.filter(a=>a.id!==id);
+  save();
+  renderAnnouncements();
+}
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+function addMessage(){
+  const from = document.getElementById('msgFrom').value.trim();
+  const to = document.getElementById('msgTo').value.trim();
+  const body = document.getElementById('msgBody').value.trim();
+  if(!from || !to || !body){ showToast('ሁሉም መስኮች ያስፈልጋሉ', 'error'); return; }
+  state.messages.unshift({id:'MSG-'+Date.now(), from, to, body, time: Date.now(), read:false});
+  save();
+  ['msgFrom','msgTo','msgBody'].forEach(id=>document.getElementById(id).value='');
+  renderMessages();
+  showToast('መልእክት ተልኳል! ✉️', 'success');
+}
+
+function renderMessages(){
+  const c = document.getElementById('messagesList');
+  if(!c) return;
+  if(state.messages.length === 0){
+    c.innerHTML = '<div class="card empty">መልእክት የለም።</div>';
+    return;
+  }
+  c.innerHTML = state.messages.map(m=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+        <div>
+          <strong style="color:var(--primary);">✉️ ${esc(m.from)}</strong>
+          <span style="color:var(--muted);font-size:0.85rem;"> → ${esc(m.to)}</span>
+        </div>
+        <span style="font-size:0.75rem;color:var(--muted);">${timeAgo(m.time)}</span>
+      </div>
+      <div style="font-size:0.9rem;">${esc(m.body)}</div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);text-align:right;">
+        <button class="btn btn-danger btn-sm" onclick="deleteMessage('${m.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteMessage(id){
+  if(!confirm('መልእክቱን ማጥፋት ይፈልጋሉ?')) return;
+  state.messages = state.messages.filter(m=>m.id!==id);
+  save();
+  renderMessages();
+}
+
+/* =========================================================
+   TASKS
+========================================================= */
+function addTask(){
+  const title = document.getElementById('taskTitle').value.trim();
+  if(!title){ showToast('ርዕስ ያስፈልጋል', 'error'); return; }
+  state.tasks.unshift({
+    id: 'TSK-' + Date.now(),
+    title,
+    owner: document.getElementById('taskOwner').value.trim(),
+    deadline: document.getElementById('taskDeadline').value,
+    status: document.getElementById('taskStatus').value,
+    desc: document.getElementById('taskDesc').value.trim(),
+    time: Date.now()
+  });
+  save();
+  ['taskTitle','taskOwner','taskDeadline','taskDesc'].forEach(id=>document.getElementById(id).value='');
+  renderTasks();
+  showToast('ተግባሩ ተጨምሯል! 📂', 'success');
+}
+
+function renderTasks(){
+  const tbody = document.querySelector('#tasksTable tbody');
+  if(!tbody) return;
+  if(state.tasks.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">ተግባር የለም።</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.tasks.map(t=>{
+    const cls = t.status==='ተጠናቅቋል'?'badge-success':t.status==='ዘግይቷል'?'badge-danger':'badge-warn';
+    return `
+      <tr>
+        <td><strong>${esc(t.title)}</strong><br><span style="font-size:0.72rem;color:var(--muted);">${esc(t.desc)||''}</span></td>
+        <td>${esc(t.owner)||'—'}</td>
+        <td>${t.deadline?formatDate(t.deadline):'—'}</td>
+        <td><span class="badge ${cls}">${esc(t.status)}</span></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="toggleTaskStatus('${t.id}')">🔄</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function toggleTaskStatus(id){
+  const t = state.tasks.find(x=>x.id===id);
+  const opts = ['በሂደት','ተጠናቅቋል','ዘግይቷል'];
+  const idx = opts.indexOf(t.status);
+  t.status = opts[(idx+1) % opts.length];
+  save();
+  renderTasks();
+}
+
+function deleteTask(id){
+  if(!confirm('ተግባሩን ማጥፋት ይፈልጋሉ?')) return;
+  state.tasks = state.tasks.filter(t=>t.id!==id);
+  save();
+  renderTasks();
+}
+
+/* =========================================================
+   FEEDBACK
+========================================================= */
+function addFeedback(){
+  const name = document.getElementById('fbName').value.trim();
+  const body = document.getElementById('fbBody').value.trim();
+  if(!name || !body){ showToast('ስምና መልእክት ያስፈልጋሉ', 'error'); return; }
+  state.feedback.unshift({
+    id: 'FB-' + Date.now(),
+    name, body,
+    type: document.getElementById('fbType').value,
+    time: Date.now()
+  });
+  save();
+  ['fbName','fbBody'].forEach(id=>document.getElementById(id).value='');
+  renderFeedback();
+  showToast('አስተያየትዎ ተልኳል! 🔄', 'success');
+}
+
+function renderFeedback(){
+  const c = document.getElementById('feedbackList');
+  if(!c) return;
+  if(state.feedback.length === 0){
+    c.innerHTML = '<div class="card empty">አስተያየት የለም።</div>';
+    return;
+  }
+  c.innerHTML = state.feedback.map(f=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+        <div>
+          <strong style="color:var(--primary);">${esc(f.name)}</strong>
+          <span class="badge badge-info" style="margin-left:8px;">${esc(f.type)}</span>
+        </div>
+        <span style="font-size:0.75rem;color:var(--muted);">${timeAgo(f.time)}</span>
+      </div>
+      <div style="font-size:0.9rem;">${esc(f.body)}</div>
+      <div style="margin-top:8px;text-align:right;">
+        <button class="btn btn-danger btn-sm" onclick="deleteFeedback('${f.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteFeedback(id){
+  if(!confirm('ማጥፋት ይፈልጋሉ?')) return;
+  state.feedback = state.feedback.filter(f=>f.id!==id);
+  save();
+  renderFeedback();
+}
+
+/* =========================================================
+   DISCUSSIONS
+========================================================= */
+function addDiscussion(){
+  const title = document.getElementById('discTitle').value.trim();
+  const body = document.getElementById('discBody').value.trim();
+  if(!title || !body){ showToast('ርዕስና ይዘት ያስፈልጋሉ', 'error'); return; }
+  state.discussions.unshift({
+    id: 'DSC-' + Date.now(),
+    title, body,
+    author: document.getElementById('discAuthor').value.trim() || 'ስም-አልባ',
+    time: Date.now()
+  });
+  save();
+  ['discTitle','discAuthor','discBody'].forEach(id=>document.getElementById(id).value='');
+  renderDiscussions();
+  showToast('ውይይቱ ተጀምሯል! 🗣️', 'success');
+}
+
+function renderDiscussions(){
+  const c = document.getElementById('discussionsList');
+  if(!c) return;
+  if(state.discussions.length === 0){
+    c.innerHTML = '<div class="card empty">ውይይት የለም።</div>';
+    return;
+  }
+  c.innerHTML = state.discussions.map(d=>`
+    <div class="card">
+      <h3>🗣️ ${esc(d.title)}</h3>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;">
+        በ${esc(d.author)} • ${timeAgo(d.time)}
+      </div>
+      <div style="font-size:0.9rem;">${esc(d.body)}</div>
+      <div style="margin-top:8px;text-align:right;">
+        <button class="btn btn-danger btn-sm" onclick="deleteDiscussion('${d.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteDiscussion(id){
+  if(!confirm('ማጥፋት ይፈልጋሉ?')) return;
+  state.discussions = state.discussions.filter(d=>d.id!==id);
+  save();
+  renderDiscussions();
+}
+
+/* =========================================================
+   DOCS
+========================================================= */
+function addDoc(){
+  const title = document.getElementById('docTitle').value.trim();
+  if(!title){ showToast('ርዕስ ያስፈልጋል', 'error'); return; }
+  state.docs.unshift({
+    id: 'DOC-' + Date.now(),
+    title,
+    type: document.getElementById('docType').value,
+    body: document.getElementById('docBody').value.trim(),
+    time: Date.now()
+  });
+  save();
+  ['docTitle','docBody'].forEach(id=>document.getElementById(id).value='');
+  renderDocs();
+  showToast('ሰነዱ ተጨምሯል! 📜', 'success');
+}
+
+function renderDocs(){
+  const c = document.getElementById('docsList');
+  if(!c) return;
+  if(state.docs.length === 0){
+    c.innerHTML = '<p class="empty">ሰነድ የለም።</p>';
+    return;
+  }
+  c.innerHTML = state.docs.map(d=>`
+    <div class="resource-card" style="margin-bottom:10px;">
+      <div class="resource-icon">📜</div>
+      <h4>${esc(d.title)} <span class="badge badge-info">${esc(d.type)}</span></h4>
+      <p>${esc(d.body)||'—'}</p>
+      <div class="resource-meta">
+        <span>${timeAgo(d.time)}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteDoc('${d.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteDoc(id){
+  if(!confirm('ሰነዱን ማጥፋት ይፈልጋሉ?')) return;
+  state.docs = state.docs.filter(d=>d.id!==id);
+  save();
+  renderDocs();
+}
+
+/* =========================================================
+   MEDIA
+========================================================= */
+function addMedia(){
+  const title = document.getElementById('mediaTitle').value.trim();
+  if(!title){ showToast('ርዕስ ያስፈልጋል', 'error'); return; }
+  state.media.unshift({
+    id: 'MED-' + Date.now(),
+    title,
+    teacher: document.getElementById('mediaTeacher').value.trim(),
+    type: document.getElementById('mediaType').value,
+    url: document.getElementById('mediaUrl').value.trim(),
+    desc: document.getElementById('mediaDesc').value.trim(),
+    time: Date.now()
+  });
+  save();
+  ['mediaTitle','mediaTeacher','mediaUrl','mediaDesc'].forEach(id=>document.getElementById(id).value='');
+  renderMedia();
+  showToast('ትምህርቱ ተጨምሯል! 🎧', 'success');
+}
+
+function renderMedia(){
+  const c = document.getElementById('mediaGrid');
+  if(!c) return;
+  if(state.media.length === 0){
+    c.innerHTML = '<p class="empty" style="grid-column:1/-1;">ሚዲያ የለም።</p>';
+    return;
+  }
+  const icons = {audio:'🎧', video:'🎬', pdf:'📄'};
+  c.innerHTML = state.media.map(m=>`
+    <div class="resource-card">
+      <div class="resource-icon">${icons[m.type]||'📁'}</div>
+      <h4>${esc(m.title)}</h4>
+      <p>${esc(m.desc)||'—'}</p>
+      <div class="resource-meta">
+        <span>👤 ${esc(m.teacher)||'—'}</span>
+        <div>
+          ${m.url ? `<a class="btn btn-primary btn-sm" href="${esc(m.url)}" target="_blank">▶️ ክፈት</a>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteMedia('${m.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteMedia(id){
+  if(!confirm('ሚዲያውን ማጥፋት ይፈልጋሉ?')) return;
+  state.media = state.media.filter(m=>m.id!==id);
+  save();
+  renderMedia();
+}
+
+/* =========================================================
+   ROSTER
+========================================================= */
+function addRoster(){
+  const day = document.getElementById('rosDay').value;
+  const time = document.getElementById('rosTime').value.trim();
+  const cls = document.getElementById('rosClass').value;
+  const teacher = document.getElementById('rosTeacher').value.trim();
+  const topic = document.getElementById('rosTopic').value.trim();
+  if(!time || !topic){ showToast('ሰዓትና ርዕስ ያስፈልጋሉ', 'error'); return; }
+  state.roster.unshift({id:'ROS-'+Date.now(), day, time, cls, teacher, topic, time2: Date.now()});
+  save();
+  ['rosTime','rosTeacher','rosTopic'].forEach(id=>document.getElementById(id).value='');
+  renderRoster();
+  showToast('የጊዜ ሰሌዳ ተጨምሯል! 📋', 'success');
+}
+
+function renderRoster(){
+  const tbody = document.querySelector('#rosterTable tbody');
+  if(!tbody) return;
+  if(state.roster.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">ጊዜ ሰሌዳ የለም።</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.roster.map(r=>`
+    <tr>
+      <td><span class="badge badge-info">${esc(r.day)}</span></td>
+      <td>${esc(r.time)}</td>
+      <td>${esc(r.cls)}</td>
+      <td>${esc(r.teacher)||'—'}</td>
+      <td>${esc(r.topic)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteRoster('${r.id}')">🗑️</button></td>
+    </tr>
+  `).join('');
+}
+
+function deleteRoster(id){
+  if(!confirm('ማጥፋት ይፈልጋሉ?')) return;
+  state.roster = state.roster.filter(r=>r.id!==id);
+  save();
+  renderRoster();
+}
+
+/* =========================================================
+   GRADES
+========================================================= */
+function populateStudentSelects(){
+  const sel = document.getElementById('gradeStudent');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">-- ተማሪ ይምረጡ --</option>' +
+    state.students.map(s=>`<option value="${esc(s.id)}">${esc(s.fullName)} (${esc(s.id)})</option>`).join('');
+}
+
+function addGrade(){
+  const sid = document.getElementById('gradeStudent').value;
+  const subject = document.getElementById('gradeSubject').value;
+  const score = parseFloat(document.getElementById('gradeScore').value);
+  if(!sid || !subject || isNaN(score)){ showToast('ሁሉም መስኮች ያስፈልጋሉ', 'error'); return; }
+  if(score < 0 || score > 100){ showToast('ነጥብ ከ0-100 መሆን አለበት', 'error'); return; }
+  const s = state.students.find(x=>x.id===sid);
+  state.grades.unshift({
+    id: 'GRD-' + Date.now(),
+    studentId: sid,
+    studentName: s.fullName,
+    subject,
+    examType: document.getElementById('gradeExamType').value,
+    score,
+    date: document.getElementById('gradeDate').value || todayStr(),
+    time: Date.now()
+  });
+  save();
+  document.getElementById('gradeScore').value = '';
+  renderGrades();
+  showToast('ውጤቱ ተመዝግቧል! 📊', 'success');
+}
+
+function renderGrades(){
+  const tbody = document.querySelector('#gradesTable tbody');
+  if(!tbody) return;
+  const search = (document.getElementById('gradeSearch')?.value || '').toLowerCase();
+  const subject = document.getElementById('gradeFilterSubject')?.value || '';
+  let list = state.grades;
+  if(search) list = list.filter(g=>g.studentName.toLowerCase().includes(search));
+  if(subject) list = list.filter(g=>g.subject===subject);
+
+  if(list.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">ውጤት የለም።</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(g=>{
+    const grade = g.score >= 90 ? 'A' : g.score >= 80 ? 'B' : g.score >= 70 ? 'C' : g.score >= 60 ? 'D' : 'F';
+    const cls = g.score >= 60 ? 'badge-success' : 'badge-danger';
+    return `
+      <tr>
+        <td>${esc(g.studentName)}</td>
+        <td>${esc(g.subject)}</td>
+        <td>${esc(g.examType)}</td>
+        <td><strong>${g.score}</strong></td>
+        <td><span class="badge ${cls}">${grade}</span></td>
+        <td>${formatDate(g.date)}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteGrade('${g.id}')">🗑️</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function deleteGrade(id){
+  if(!confirm('ማጥፋት ይፈልጋሉ?')) return;
+  state.grades = state.grades.filter(g=>g.id!==id);
+  save();
+  renderGrades();
+}
+
+/* =========================================================
+   CERTIFICATES
+========================================================= */
+function generateCertificate(type){
+  let title = '';
+  if(type === 'student') title = 'የተማሪነት ማረጋገጫ';
+  else if(type === 'teacher') title = 'የመምህርነት ማረጋገጫ';
+  else if(type === 'member') title = 'የአባልነት ማረጋገጫ';
+  else title = 'የአገልግሎት ማረጋገጫ';
+
+  showModal('📜 ' + title, `
+    <div style="text-align:center;padding:20px;border:3px double var(--gold);border-radius:12px;background:#fdf8e3;">
+      <div style="font-size:2rem;">✝</div>
+      <h2 style="color:var(--primary);margin:10px 0;">የግቢ ጉባኤ ትምህርት ክፍል</h2>
+      <h3 style="color:var(--gold);margin:14px 0;">${title}</h3>
+      <p style="margin:20px 0;font-size:0.9rem;">
+        ይህ ሰነድ የተሰጠው ለ <strong>____________________</strong> ሲሆን<br>
+        በግቢ ጉባኤው ውስጥ ያለውን አገልግሎት ለማረጋገጥ ነው።
+      </p>
+      <div style="display:flex;justify-content:space-between;margin-top:40px;font-size:0.8rem;">
+        <div>____________________<br>ኃላፊ ፈርማ</div>
+        <div>____________________<br>ቀን</div>
+      </div>
+    </div>
+  `, `<button class="btn btn-primary" onclick="window.print()">🖨️ አትም</button>
+      <button class="btn btn-ghost" onclick="closeModal()">ዝጋ</button>`);
+}
+
+/* =========================================================
+   EXPORT / IMPORT
+========================================================= */
+function exportStudentsCSV(){
+  const list = getFilteredStudents();
+  if(list.length === 0){ showToast('ተማሪ የለም', 'error'); return; }
+  const headers = ['መታወቂያ','ሙሉ ስም','ጾታ','የትውልድ ቀን','ስልክ','የወላጅ ስልክ','አድራሻ','ኢሜይል','ደረጃ','ሁኔታ','ተቋም','መስክ','ክፍል','ሰዓት','መምህር','ማስታወሻ'];
+  const rows = list.map(s=>[s.id, s.fullName, s.gender, s.dob, s.phone, s.parentPhone, s.address, s.email, s.eduLevel, s.status, s.school, s.field, s.class, s.session, s.teacherName, s.note]);
+  const csv = [headers, ...rows].map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `students_${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV ተወርዷል! 📥', 'success');
+}
+
+function printStudents(){
+  const list = getFilteredStudents();
+  if(list.length === 0){ showToast('ተማሪ የለም', 'error'); return; }
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <html><head><title>የተማሪዎች ዝርዝር</title>
+    <style>
+      body{font-family:'Noto Sans Ethiopic',sans-serif;padding:20px;}
+      h1{color:#1a4d2e;font-size:1.3rem;}
+      p{color:#6b7c72;font-size:0.85rem;margin-bottom:16px;}
+      table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+      th{background:#e8f3ec;color:#1a4d2e;padding:8px;text-align:left;border:1px solid #d9e2db;}
+      td{padding:8px;border:1px solid #d9e2db;}
+    </style></head><body>
+    <h1>📋 የተማሪዎች ዝርዝር</h1>
+    <p>ቀን: ${formatDate(new Date().toISOString())} • ጠቅላላ: ${list.length}</p>
+    <table>
+      <thead><tr><th>መታወቂያ</th><th>ስም</th><th>ጾታ</th><th>ደረጃ</th><th>ስልክ</th><th>መምህር</th></tr></thead>
+      <tbody>${list.map(s=>`<tr><td>${esc(s.id)}</td><td>${esc(s.fullName)}</td><td>${esc(s.gender)}</td><td>${esc(s.eduLevel)}</td><td>${esc(s.phone)}</td><td>${esc(s.teacherName)}</td></tr>`).join('')}</tbody>
+    </table>
+    <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>
+  `);
+  w.document.close();
+}
+
+function exportAllData(){
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gibi_gubae_backup_${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('ሙሉ ውሂብ ተቀምጧል! 💾', 'success');
+}
+
+function importAllData(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      if(!data.students) throw new Error('የተሳሳተ ፋይል');
+      state = data;
+      save();
+      showToast('ውሂብ ተመልሷል! ገጹን ያድሱ', 'success');
+      location.reload();
+    }catch(err){
+      showToast('ፋይሉ የተሳሳተ ነው', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetAllData(){
+  if(!confirm('ሁሉንም ውሂብ ማጥፋት ይፈልጋሉ? ይህ ተግባር መመለስ አይቻልም!')) return;
+  if(!confirm('እርግጠኛ ነዎት? ሁሉም ተማሪዎች፣ መምህራን፣ ውጤቶች ይጠፋሉ።')) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+}
+
+function renderReportSummary(){
+  const el = document.getElementById('reportSummary');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${state.students.length}</div><div class="stat-label">ተማሪዎች</div></div>
+      <div class="stat-card gold"><div class="stat-num">${state.teachers.length}</div><div class="stat-label">መምህራን</div></div>
+      <div class="stat-card info"><div class="stat-num">${state.members.length}</div><div class="stat-label">አባላት</div></div>
+      <div class="stat-card purple"><div class="stat-num">${state.attendance.length}</div><div class="stat-label">አቴንዳንሶች</div></div>
+      <div class="stat-card danger"><div class="stat-num">${state.grades.length}</div><div class="stat-label">ውጤቶች</div></div>
+      <div class="stat-card"><div class="stat-num">${state.posts.length + state.discussions.length}</div><div class="stat-label">ውይይቶች</div></div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   MODAL
+========================================================= */
+function showModal(title, body, footer=''){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalFooter').innerHTML = footer || '<button class="btn btn-ghost" onclick="closeModal()">ዝጋ</button>';
+  document.getElementById('modalOverlay').classList.add('active');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+function updateHeaderStats(){
+  // Optional: add header stats here
+}
+
+
+/* =========================================================
+   CLOUD (የራሱ ስክሪፕት) — ምትኬ እና የአባል መግቢያ
+========================================================= */
+const GG_CFG_KEY = 'gg_cloud_v1';
+function ggCfg(){ try{ const c = JSON.parse(localStorage.getItem(GG_CFG_KEY)||'{}'); return {url:(c.url||'').trim(), key:(c.key||'').trim(), auto:!!c.auto}; }catch(e){ return {url:'',key:'',auto:false}; } }
+function ggStatus(m){ const e=document.getElementById('ggStatus'); if(e) e.textContent=m; }
+function ggFillCfg(){
+  const c=ggCfg(); const u=document.getElementById('ggUrl'), k=document.getElementById('ggKey'), a=document.getElementById('ggAuto');
+  if(u) u.value=c.url; if(k) k.value=c.key; if(a) a.checked=c.auto;
+}
+function ggSaveCfg(quiet){
+  const u=document.getElementById('ggUrl'), k=document.getElementById('ggKey'), a=document.getElementById('ggAuto');
+  const c={url:(u.value||'').trim(), key:(k.value||'').trim(), auto:!!a.checked};
+  if(c.url && !/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(c.url)){ showToast('የስክሪፕት አድራሻ በ /exec መጨረስ አለበት', 'error'); return; }
+  try{ localStorage.setItem(GG_CFG_KEY, JSON.stringify(c)); }catch(e){}
+  if(!quiet) showToast('ተቀምጧል ✅');
+}
+async function ggCall(body){
+  const c=ggCfg();
+  if(!c.url) throw new Error('የስክሪፕት አድራሻ አልተሞላም');
+  const r = await fetch(c.url, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(Object.assign({key:c.key}, body))});
+  const j = await r.json();
+  return j;
+}
+function ggErr(e){ return (e && e.message) ? e.message : String(e); }
+async function ggTest(){
+  try{ ggSaveCfg(true); ggStatus('እየተፈተሸ ነው…'); const j=await ggCall({action:'ping'});
+    ggStatus(j.ok?'✅ ግንኙነቱ ትክክል ነው':'❌ '+(j.error||'ስህተት')); showToast(j.ok?'ግንኙነት ተሳክቷል':(j.error||'ስህተት'), j.ok?'success':'error');
+  }catch(e){ ggStatus('❌ ግንኙነት አልተሳካም: '+ggErr(e)); showToast('ግንኙነት አልተሳካም', 'error'); }
+}
+function ggHasData(){ return !!(state.students.length||state.members.length||state.grades.length||state.attendance.length||state.announcements.length||state.tasks.length||state.docs.length); }
+async function ggPush(manual){
+  try{ if(manual) ggSaveCfg(true); const j=await ggCall({action:'full_push', state:state});
+    if(j.ok){ ggStatus('✅ ምትኬ ተልኳል — '+new Date().toLocaleString()); if(manual) showToast('ምትኬ ወደ ደመና ተልኳል ☁️'); }
+    else { ggStatus('❌ '+(j.error||'ስህተት')); if(manual) showToast(j.error||'ስህተት','error'); }
+  }catch(e){ ggStatus('❌ '+ggErr(e)); if(manual) showToast('ምትኬ አልተላከም', 'error'); }
+}
+async function ggPull(manual){
+  try{
+    const j=await ggCall({action:'full_pull'});
+    if(!j.ok){ ggStatus('❌ '+(j.error||'ስህተት')); if(manual) showToast(j.error||'ስህተት','error'); return false; }
+    if(j.empty){ ggStatus('በደመና ላይ ምትኬ የለም'); if(manual) showToast('በደመና ምትኬ የለም','error'); return false; }
+    if(manual && ggHasData() && !confirm('በዚህ መሣሪያ ያለው ውሂብ በደመናው ምትኬ ይተካል። ይቀጥሉ?')) return false;
+    try{ localStorage.setItem(KEY+'_before_restore', JSON.stringify(state)); }catch(e){}
+    state = j.state; save(); location.reload(); return true;
+  }catch(e){ ggStatus('❌ '+ggErr(e)); if(manual) showToast('መልሶ ማግኘት አልተሳካም','error'); return false; }
+}
+function ggPeople(){
+  return state.students.map(s=>({code:s.id, name:s.fullName, kind:'student'}))
+    .concat(state.members.map(m=>({code:m.id, name:m.name, kind:'member'})))
+    .concat(state.teachers.map(t=>({code:t.id, name:t.name, kind:'teacher'})));
+}
+async function ggPublish(manual){
+  try{ const j=await ggCall({action:'publish', people:ggPeople(),
+      announcements:state.announcements.slice(0,50).map(a=>({title:a.title,body:a.body,type:a.type,time:a.time})),
+      grades:state.grades.map(g=>({studentId:g.studentId,subject:g.subject,examType:g.examType,score:g.score,date:g.date}))});
+    if(j.ok){ ggStatus('✅ '+j.people+' ሰዎች ለመግቢያ ተዘጋጅተዋል'); if(manual) showToast('የአባላት መግቢያ ተዘምኗል 🌐'); }
+    else { ggStatus('❌ '+(j.error||'ስህተት')); if(manual) showToast(j.error||'ስህተት','error'); }
+  }catch(e){ ggStatus('❌ '+ggErr(e)); if(manual) showToast('አልተሳካም','error'); }
+}
+function ggMemberLink(){
+  const c=ggCfg(); if(!c.url){ showToast('መጀመሪያ የስክሪፕት አድራሻ ያስቀምጡ','error'); return; }
+  const link=location.href.split('#')[0]+'#s='+encodeURIComponent(c.url);
+  (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(()=>showToast('ሊንኩ ተቀድቷል — ለአባላት ይላኩ (ሚስጥሩን አያካትትም)'),()=>prompt('ሊንኩን ይቅዱ',link));
+}
+function ggReadLink(){
+  try{ const m=location.hash.match(/[#&]s=([^&]+)/); if(!m) return; const u=decodeURIComponent(m[1]);
+    if(/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(u)){ const c=ggCfg(); if(!c.url){ c.url=u; localStorage.setItem(GG_CFG_KEY, JSON.stringify(c)); } }
+    history.replaceState(null,'',location.pathname+location.search);
+  }catch(e){}
+}
+let ggTimer=null;
+const _ggSaveOrig = save;
+save = function(){ _ggSaveOrig(); const c=ggCfg(); if(c.auto && c.url && c.key){ clearTimeout(ggTimer); ggTimer=setTimeout(()=>{ ggPush(false); ggPublish(false); }, 4000); } };
+async function ggAutoRestore(){
+  const c=ggCfg(); if(!c.url || !c.key || ggHasData()) return;
+  try{ const j=await ggCall({action:'full_pull'}); if(j.ok && !j.empty && j.state && j.state.students){ state=j.state; _ggSaveOrig(); location.reload(); } }catch(e){}
+}
+async function ggHash(code, pin){
+  const s='GG:'+code+':'+pin;
+  try{ const b=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  catch(e){ let h=5381; for(let i=0;i<s.length;i++) h=((h<<5)+h+s.charCodeAt(i))>>>0; return ('00000000'+h.toString(16)).slice(-8).repeat(5); }
+}
+function ggMemberLogin(){
+  showModal('👤 በምዝገባ ኮድ ግባ', `
+    <div class="form-grid">
+      <div class="form-field full"><label>የምዝገባ ኮድ (ለምሳሌ GG-0001)</label><input type="text" id="ggMCode" autocomplete="off"></div>
+      <div class="form-field full"><label>PIN (መጀመሪያ ሲገቡ የራስዎን ይፍጠሩ)</label><input type="password" id="ggMPin" inputmode="numeric" autocomplete="off"></div>
+    </div>
+    <p id="ggMMsg" style="font-size:0.82rem;color:var(--danger);margin-top:8px;"></p>`,
+    '<button class="btn btn-primary" onclick="ggDoLogin()">ግባ</button> <button class="btn btn-ghost" onclick="closeModal()">ዝጋ</button>');
+}
+async function ggDoLogin(){
+  const code=document.getElementById('ggMCode').value.trim().toUpperCase(), pin=document.getElementById('ggMPin').value.trim(), msg=document.getElementById('ggMMsg');
+  if(!code||pin.length<4){ msg.textContent='ኮድና ቢያንስ 4 ፊደል/ቁጥር PIN ያስገቡ'; return; }
+  const ph=await ggHash(code,pin);
+  try{
+    let j=await ggCall({action:'m_login', code, pinHash:ph});
+    if(j.needPin){ const s=await ggCall({action:'set_pin', code, pinHash:ph}); if(!s.ok){ msg.textContent=s.error||'ስህተት'; return; } j=await ggCall({action:'m_login', code, pinHash:ph}); }
+    if(!j.ok){ msg.textContent=j.error||'ስህተት'; return; }
+    const ann=(j.announcements||[]).map(a=>`<div style="border-bottom:1px solid var(--border);padding:8px 0;"><strong>${esc(a.title)}</strong><div style="font-size:0.84rem;">${esc(a.body)}</div></div>`).join('')||'<p style="color:var(--muted)">ማስታወቂያ የለም</p>';
+    const gr=(j.grades||[]).map(g=>`<tr><td>${esc(g.subject)}</td><td>${esc(g.examType||'')}</td><td>${esc(String(g.score))}</td><td>${esc(g.date||'')}</td></tr>`).join('');
+    const grT=gr?`<div class="table-wrap"><table><thead><tr><th>ትምህርት</th><th>ዓይነት</th><th>ነጥብ</th><th>ቀን</th></tr></thead><tbody>${gr}</tbody></table></div>`:'<p style="color:var(--muted)">ውጤት የለም</p>';
+    showModal('እንኳን ደህና መጡ — '+j.name, `<h4>📢 ማስታወቂያዎች</h4>${ann}<h4 style="margin-top:14px;">📊 የእርስዎ ውጤት</h4>${grT}`);
+  }catch(e){ msg.textContent='ግንኙነት አልተሳካም: '+ggErr(e)+' (የስክሪፕት አድራሻ በዚህ መሣሪያ መሞላት አለበት)'; }
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+function init(){
+  const d = document.getElementById('attDate'); if(d) d.value = todayStr();
+  const gd = document.getElementById('gradeDate'); if(gd) gd.value = todayStr();
+  const rd = document.getElementById('regDob'); if(rd) rd.max = todayStr();
+  populateTeacherSelects();
+  populateStudentSelects();
+  renderDashboard();
+  updateHeaderStats();
+}
+ggReadLink();
+init();
+ggFillCfg();
+ggAutoRestore();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+</script>
+</body>
+</html>
