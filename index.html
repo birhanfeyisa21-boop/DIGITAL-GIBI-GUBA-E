@@ -8,6 +8,10 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<!-- ፍለጋ ላይ እንዳይታይ ተዘግቷል -->
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet">
 <title>የግቢ ጉባኤ ሙሉ ሲስተም | Gibi Gubae Complete System</title>
 <style>
   :root{
@@ -487,6 +491,32 @@
   .sidebar::-webkit-scrollbar-track{background:#f0f5f1;border-radius:3px;}
   .sidebar::-webkit-scrollbar-thumb{background:#c1d4c7;border-radius:3px;}
   .sidebar::-webkit-scrollbar-thumb:hover{background:var(--primary-light);}
+  /* ===== ዳሽቦርድ — የተሻሻለ ዲዛይን (ይዘት አልተቀየረም፤ ገጽታ ብቻ) ===== */
+  #page-dashboard .page-title{font-size:1.5rem;letter-spacing:.2px}
+  #page-dashboard .stats-grid{gap:14px}
+  #page-dashboard .stat-card{--ac:var(--primary);--ac2:#E6F2EA;position:relative;overflow:hidden;border:1px solid var(--ac2);border-left:1px solid var(--ac2);
+    border-radius:20px;padding:20px 12px 16px;background:linear-gradient(180deg,#fff 55%,var(--ac2));box-shadow:0 8px 20px rgba(26,77,46,.1);transition:transform .18s,box-shadow .18s}
+  #page-dashboard .stat-card::before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--ac)}
+  #page-dashboard .stat-card:hover{transform:translateY(-3px);box-shadow:0 14px 26px rgba(26,77,46,.18)}
+  #page-dashboard .stat-card.gold{--ac:#B88E0F;--ac2:#FBF1D2}
+  #page-dashboard .stat-card.info{--ac:#2C5F9E;--ac2:#E3EDF9}
+  #page-dashboard .stat-card.purple{--ac:#6B4C9A;--ac2:#EEE8F7}
+  #page-dashboard .stat-card.danger{--ac:#B83B3B;--ac2:#FAE5E5}
+  #page-dashboard .stat-num{font-size:2.2rem;color:var(--ac) !important;font-family:Georgia,'Noto Serif Ethiopic',serif}
+  #page-dashboard .stat-label{font-weight:700;color:#43544A;font-size:.8rem}
+  #page-dashboard .card{border-radius:22px;border:1px solid #DDE8E0;background:linear-gradient(180deg,#fff,#FAFDFB);box-shadow:0 10px 26px rgba(26,77,46,.09)}
+  #page-dashboard .card h3{padding-bottom:10px;margin-bottom:14px;border-bottom:1px dashed #CFE0D4}
+  #page-dashboard .btn{border-radius:14px;font-weight:700;transition:transform .15s,box-shadow .15s}
+  #page-dashboard .btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(26,77,46,.22)}
+  .page-title+.page-sub{margin-bottom:14px}
+  .btn:focus-visible,.menu-item:focus-visible{outline:3px solid #E6C757;outline-offset:2px}
+  @media (min-width:901px){
+    .sidebar{scrollbar-width:thin;scrollbar-color:#9CBDA8 #EAF2EC;padding:10px}
+    .sidebar .menu-item{padding:7px 12px;margin-bottom:5px;font-size:.85rem}
+    .sidebar .menu-icon{width:30px;height:30px;font-size:15px}
+    .sidebar-group{margin-bottom:12px}
+  }
+  @media (prefers-reduced-motion:reduce){#page-dashboard .stat-card,#page-dashboard .btn{transition:none}}
 </style>
 </head>
 <body>
@@ -559,6 +589,9 @@
       <div class="sidebar-group-title">💬 ግንኙነት</div>
       <div class="menu-item" onclick="showPage('forum',this)">
         <div class="menu-icon">💬</div> የቡድን ውይይት
+      </div>
+      <div class="menu-item" onclick="showPage('conf',this)">
+        <div class="menu-icon">📞</div> ድምፅ/ቪዲዮ ስብሰባ
       </div>
       <div class="menu-item" onclick="showPage('announcements',this)">
         <div class="menu-icon">📢</div> ህዝብ ግንኙነት / ሪፖርት
@@ -1303,6 +1336,12 @@
     </div>
 
     <!-- ===== PAGE: ANNOUNCEMENTS ===== -->
+    <div id="page-conf" class="page">
+      <h2 class="page-title">📞 ድምፅ / ቪዲዮ ስብሰባ</h2>
+      <p class="page-sub">ስብሰባ ጀምረው ሊንኩን ለአባላት ይላኩ — በስልክም በኮምፒውተርም ከአሳሽ ይገባል፤ መተግበሪያ ወይም መለያ አያስፈልግም።</p>
+      <div class="card" id="confBody"></div>
+    </div>
+
     <div id="page-announcements" class="page">
       <h2 class="page-title">📢 ህዝብ ግንኙነት / ሪፖርት</h2>
       <p class="page-sub">ማስታወቂያዎች፣ ሪፖርቶችና ይፋዊ መልእክቶች።</p>
@@ -1554,6 +1593,7 @@
         <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">ይህ የግቢ ጉባኤው የራሱ ስክሪፕት ነው። አድራሻውና ሚስጥሩ በዚህ መሣሪያ ላይ ብቻ ይቀመጣሉ (ወደ ይፋዊው ኮድ አይገቡም)።</p>
         <div class="form-grid">
           <div class="form-field full"><label>የስክሪፕት አድራሻ (/exec)</label><input type="password" id="ggUrl" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="form-field full"><label>የግቢ ጉባኤው ስም (አዲስ ስልክ ላይ መመለሻ ለማረጋገጥ)</label><input type="text" id="ggOrg" autocomplete="off" placeholder="ለምሳሌ፦ የ… ዩኒቨርሲቲ ግቢ ጉባኤ"></div>
           <div class="form-field full"><label>ADMIN_KEY (የአስተዳዳሪ ሚስጥር)</label><input type="password" id="ggKey" autocomplete="off"></div>
         </div>
         <div class="btn-row">
@@ -1565,6 +1605,12 @@
           <button class="btn btn-ghost btn-sm" onclick="ggMemberLink()">🔗 የአባል መግቢያ ሊንክ ቅዳ</button>
         </div>
         <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:0.84rem;"><input type="checkbox" id="ggAuto" onchange="ggSaveCfg(true)"> ለውጥ ሲደረግ በራስ-ሰር ምትኬ ላክ</label>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border,#ccc);">
+          <p style="font-size:0.82rem;margin-bottom:6px;"><b>🔄 አዲስ ስልክ/ኮምፒውተር?</b> ከላይ የስክሪፕት አድራሻና ሚስጥር ቁልፍ አስገብተው «💾 አስቀምጥ» ከዚያ «⬇️ ከደመና መልስ» ይጫኑ — ቀድሞ የተሞላው ሁሉ ይመለሳል (ውሂብ ባዶ ከሆነ በራሱም ይመለሳል)።</p>
+          <p style="font-size:0.82rem;margin-bottom:6px;"><b>🔑 የአንድ አባል PIN ብቻ አጥፋ</b> (ሌሎች አይነኩም)፦</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><input id="ggRpCode" placeholder="የአባል ኮድ (ለምሳሌ MEM-0001)" style="flex:1;min-width:160px;"><button class="btn btn-ghost btn-sm" onclick="ggResetPin()">🗑 የዚህን PIN አጥፋ</button></div>
+        </div>
+        <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="ggRestoreModal()">🔄 ቀድሞ የነበረ መረጃ መልስ (በስምና በቁልፍ)</button></div>
         <p id="ggStatus" style="font-size:0.8rem;color:var(--muted);margin-top:10px;"></p>
       </div>
 
@@ -1708,6 +1754,7 @@ function showPage(id, el){
   if(id==='grades') { renderGrades(); populateStudentSelects(); }
   if(id==='idcards') renderIdSelects();
   if(id==='forum') renderPosts();
+  if(id==='conf') renderConf();
   if(id==='announcements') renderAnnouncements();
   if(id==='messages') renderMessages();
   if(id==='tasks') renderTasks();
@@ -1738,6 +1785,47 @@ function toggleSidebar(){
    TOAST
 ========================================================= */
 let toastTimer;
+/* ===== ድምፅ/ቪዲዮ ስብሰባ (Jitsi Meet — እያንዳንዱ ስብሰባ የማይገመት የራሱ የክፍል ስም አለው) ===== */
+const CONF_HOST='https://meet.jit.si/', CONF_KEY='gg_conf_recent_v1';
+function confRecent(){ try{ return JSON.parse(localStorage.getItem(CONF_KEY)||'[]'); }catch(e){ return []; } }
+function confRemember(o){ try{ const l=confRecent().filter(x=>x.room!==o.room); l.unshift(o); localStorage.setItem(CONF_KEY, JSON.stringify(l.slice(0,6))); }catch(e){} }
+function confRoom(){ const a=new Uint8Array(9); crypto.getRandomValues(a); const c='abcdefghjkmnpqrstuvwxyz23456789'; return 'GG-'+Array.from(a).map(x=>c[x%31]).join(''); }
+function confUrl(room, audioOnly){ return CONF_HOST+room+'#config.prejoinPageEnabled=true'+(audioOnly?'&config.startWithVideoMuted=true&config.startAudioOnly=true':''); }
+function renderConf(){
+  const el=document.getElementById('confBody'); if(!el) return;
+  const rec=confRecent();
+  el.innerHTML=`
+    <div class="form-grid">
+      <div class="form-field full"><label>የስብሰባ ርዕስ (ለአስታዋሽ)</label><input type="text" id="cfTitle" placeholder="ለምሳሌ፦ የሳምንት አመራር ስብሰባ"></div>
+      <div class="form-field full"><label>ዓይነት</label><select id="cfMode"><option value="av">🎥 ቪዲዮ እና ድምፅ</option><option value="a">🎧 ድምፅ ብቻ (ስልክ ኮንፈረንስ — ዳታ ይቆጥባል)</option></select></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn btn-primary" onclick="confStart()">▶ ስብሰባ ጀምር</button>
+      <button class="btn btn-ghost" onclick="window.open('https://meet.google.com/new','_blank','noopener')">Google Meet ክፈት</button>
+    </div>
+    <div id="cfOut"></div>
+    <h3 style="margin:18px 0 8px;font-size:0.95rem;">በሊንክ ወይም በኮድ ግባ</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;"><input type="text" id="cfJoin" placeholder="ሊንኩን ወይም GG-… ኮዱን ይለጥፉ" style="flex:1;min-width:200px;"><button class="btn btn-info" onclick="confJoin()">ግባ</button></div>
+    ${rec.length?`<h3 style="margin:18px 0 8px;font-size:0.95rem;">የቅርብ ስብሰባዎች</h3>`+rec.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #eee;"><span>${esc(r.title||r.room)}<br><small style="color:var(--muted)">${new Date(r.ts).toLocaleString()} · ${r.a?'🎧':'🎥'}</small></span><button class="btn btn-ghost btn-sm" onclick="window.open(confUrl('${r.room}',${r.a?'true':'false'}),'_blank','noopener')">ግባ</button></div>`).join(''):''}
+    <p style="font-size:0.78rem;color:var(--muted);margin-top:14px;">ማስታወሻ፦ ነጻው የJitsi አገልግሎት አንዳንድ ጊዜ ስብሰባውን የሚጀምረውን ሰው በGoogle መለያ እንዲገባ ሊጠይቅ ይችላል — ያኔ «Google Meet ክፈት»ን ይጠቀሙ። የክፍሉን ሊንክ ለተፈቀደላቸው ብቻ ይስጡ።</p>`;
+}
+function confStart(){
+  const title=(document.getElementById('cfTitle').value||'').trim(), a=document.getElementById('cfMode').value==='a', room=confRoom();
+  confRemember({room,title,a,ts:Date.now()});
+  const url=confUrl(room,a), msg=(title?title+' — ':'')+'የስብሰባ ሊንክ፦ '+url;
+  window.open(url,'_blank','noopener');
+  const out=document.getElementById('cfOut');
+  out.innerHTML=`<div class="card" style="margin-top:12px;"><b>✅ ስብሰባው ተከፍቷል</b><br><span style="font-size:0.8rem;word-break:break-all;color:var(--muted)">${url}</span><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" id="cfReopen">እንደገና ክፈት</button><button class="btn btn-ghost btn-sm" id="cfCopy">📋 ሊንክ ቅዳ</button>${navigator.share?'<button class="btn btn-ghost btn-sm" id="cfShare">📤 ላክ</button>':''}</div></div>`;
+  document.getElementById('cfReopen').onclick=()=>window.open(url,'_blank','noopener');
+  document.getElementById('cfCopy').onclick=()=>{ (navigator.clipboard?navigator.clipboard.writeText(msg):Promise.reject()).then(()=>showToast('ተቀድቷል'),()=>prompt('ሊንኩን ይቅዱ',msg)); };
+  const sh=document.getElementById('cfShare'); if(sh) sh.onclick=()=>navigator.share({title:title||'ግቢ ጉባኤ',text:msg}).catch(()=>{});
+}
+function confJoin(){
+  const v=(document.getElementById('cfJoin').value||'').trim(), m=/(GG-[a-z0-9]{6,20})/i.exec(v);
+  if(m){ window.open(confUrl(m[1],false),'_blank','noopener'); return; }
+  if(/^https:\/\/(meet\.jit\.si|meet\.google\.com)\//.test(v)){ window.open(v,'_blank','noopener'); return; }
+  showToast('ልክ ያልሆነ ሊንክ ወይም ኮድ','error');
+}
 function showToast(msg, type='success'){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -3161,15 +3249,19 @@ function updateHeaderStats(){
    CLOUD (የራሱ ስክሪፕት) — ምትኬ እና የአባል መግቢያ
 ========================================================= */
 const GG_CFG_KEY = 'gg_cloud_v1';
-function ggCfg(){ try{ const c = JSON.parse(localStorage.getItem(GG_CFG_KEY)||'{}'); return {url:(c.url||'').trim(), key:(c.key||'').trim(), auto:!!c.auto}; }catch(e){ return {url:'',key:'',auto:false}; } }
+const GG_DEFAULT_URL = '';   // የስክሪፕት /exec አድራሻ እዚህ ከተጻፈ ሁሉም አዲስ መሣሪያ በራሱ ይጠቀምበታል (ሚስጥር አይደለም፤ ADMIN_KEY ግን በፍጹም እዚህ አይጻፍም)
+function ggCfg(){ try{ const c = JSON.parse(localStorage.getItem(GG_CFG_KEY)||'{}'); return {url:(c.url||GG_DEFAULT_URL||'').trim(), key:(c.key||'').trim(), auto:!!c.auto, org:(c.org||'').trim()}; }catch(e){ return {url:GG_DEFAULT_URL,key:'',auto:false,org:''}; } }
+function ggOkGet(){ try{ return localStorage.getItem('gg_autook')==='1'; }catch(e){ return false; } }
+function ggOkSet(){ try{ localStorage.setItem('gg_autook','1'); }catch(e){} }
 function ggStatus(m){ const e=document.getElementById('ggStatus'); if(e) e.textContent=m; }
 function ggFillCfg(){
-  const c=ggCfg(); const u=document.getElementById('ggUrl'), k=document.getElementById('ggKey'), a=document.getElementById('ggAuto');
-  if(u) u.value=c.url; if(k) k.value=c.key; if(a) a.checked=c.auto;
+  const c=ggCfg(); const u=document.getElementById('ggUrl'), k=document.getElementById('ggKey'), a=document.getElementById('ggAuto'), o=document.getElementById('ggOrg');
+  if(u) u.value=c.url; if(k) k.value=c.key; if(a) a.checked=c.auto; if(o) o.value=c.org;
 }
 function ggSaveCfg(quiet){
   const u=document.getElementById('ggUrl'), k=document.getElementById('ggKey'), a=document.getElementById('ggAuto');
-  const c={url:(u.value||'').trim(), key:(k.value||'').trim(), auto:!!a.checked};
+  const o=document.getElementById('ggOrg');
+  const c={url:(u.value||'').trim(), key:(k.value||'').trim(), auto:!!a.checked, org:o?(o.value||'').trim():ggCfg().org};
   if(c.url && !/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(c.url)){ showToast('የስክሪፕት አድራሻ በ /exec መጨረስ አለበት', 'error'); return; }
   try{ localStorage.setItem(GG_CFG_KEY, JSON.stringify(c)); }catch(e){}
   if(!quiet) showToast('ተቀምጧል ✅');
@@ -3189,10 +3281,17 @@ async function ggTest(){
 }
 function ggHasData(){ return !!(state.students.length||state.members.length||state.grades.length||state.attendance.length||state.announcements.length||state.tasks.length||state.docs.length); }
 async function ggPush(manual){
-  try{ if(manual) ggSaveCfg(true); const j=await ggCall({action:'full_push', state:state});
-    if(j.ok){ ggStatus('✅ ምትኬ ተልኳል — '+new Date().toLocaleString()); if(manual) showToast('ምትኬ ወደ ደመና ተልኳል ☁️'); }
+  try{ if(manual) ggSaveCfg(true); const j=await ggCall({action:'full_push', state:state, org:ggCfg().org});
+    if(j.ok){ ggOkSet(); ggStatus('✅ ምትኬ ተልኳል — '+new Date().toLocaleString()); if(manual) showToast('ምትኬ ወደ ደመና ተልኳል ☁️'); }
     else { ggStatus('❌ '+(j.error||'ስህተት')); if(manual) showToast(j.error||'ስህተት','error'); }
   }catch(e){ ggStatus('❌ '+ggErr(e)); if(manual) showToast('ምትኬ አልተላከም', 'error'); }
+}
+async function ggResetPin(){
+  const code=(document.getElementById('ggRpCode').value||'').trim();
+  if(!code){ showToast('የአባል ኮድ ያስገቡ','error'); return; }
+  if(!confirm(code+' — የዚህ ሰው PIN ብቻ ይጠፋል፤ ሌሎች አይነኩም። ይቀጥሉ?')) return;
+  try{ const j=await ggCall({action:'reset_pin', code}); if(j.ok){ ggStatus('✅ የ '+code+' PIN ጠፍቷል — በሚቀጥለው መግቢያ አዲስ ይፈጥራል'); showToast('PIN ጠፍቷል'); } else { ggStatus('❌ '+(j.error||'ስህተት')); showToast(j.error||'ስህተት','error'); } }
+  catch(e){ ggStatus('❌ '+ggErr(e)); showToast('አልተሳካም','error'); }
 }
 async function ggPull(manual){
   try{
@@ -3201,7 +3300,7 @@ async function ggPull(manual){
     if(j.empty){ ggStatus('በደመና ላይ ምትኬ የለም'); if(manual) showToast('በደመና ምትኬ የለም','error'); return false; }
     if(manual && ggHasData() && !confirm('በዚህ መሣሪያ ያለው ውሂብ በደመናው ምትኬ ይተካል። ይቀጥሉ?')) return false;
     try{ localStorage.setItem(KEY+'_before_restore', JSON.stringify(state)); }catch(e){}
-    state = j.state; save(); location.reload(); return true;
+    ggOkSet(); state = j.state; _ggSaveOrig(); location.reload(); return true;
   }catch(e){ ggStatus('❌ '+ggErr(e)); if(manual) showToast('መልሶ ማግኘት አልተሳካም','error'); return false; }
 }
 function ggPeople(){
@@ -3230,7 +3329,65 @@ function ggReadLink(){
 }
 let ggTimer=null;
 const _ggSaveOrig = save;
-save = function(){ _ggSaveOrig(); const c=ggCfg(); if(c.auto && c.url && c.key){ clearTimeout(ggTimer); ggTimer=setTimeout(()=>{ ggPush(false); ggPublish(false); }, 4000); } };
+async function ggAutoPush(){
+  if(!ggHasData()) return;                       // ባዶ ውሂብ ደመናውን አይተካም
+  if(!ggOkGet()){                                // አዲስ መሣሪያ፦ ደመናው ባዶ መሆኑን መጀመሪያ አረጋግጥ
+    try{ const j=await ggCall({action:'full_pull'}); if(!(j.ok && j.empty)) return; ggOkSet(); }catch(e){ return; }
+  }
+  await ggPush(false); ggPublish(false);
+}
+save = function(){ _ggSaveOrig(); const c=ggCfg(); if(c.auto && c.url && c.key){ clearTimeout(ggTimer); ggTimer=setTimeout(ggAutoPush, 4000); } };
+function ggRestoreModal(){
+  const c=ggCfg();
+  showModal('🔄 ቀድሞ የነበረ መረጃ መልስ', `
+    <p style="font-size:0.84rem;margin-bottom:10px;">በሌላ ስልክ/ኮምፒውተር የተሞላውን መረጃ እዚህ ለመመለስ የግቢ ጉባኤውን ስም እና የአስተዳዳሪ ሚስጥር (ADMIN_KEY) ያስገቡ።</p>
+    <div class="form-grid">
+      <div class="form-field full"><label>የግቢ ጉባኤው ስም</label><input type="text" id="ggRsOrg" autocomplete="off" value="${(c.org||'').replace(/"/g,'&quot;')}"></div>
+      <div class="form-field full"><label>ADMIN_KEY</label><input type="password" id="ggRsKey" autocomplete="off"></div>
+    </div>
+    <details id="ggRsAdv" style="margin-top:8px;"><summary style="cursor:pointer;font-size:0.8rem;">⚙️ ተጨማሪ — የስክሪፕት አድራሻ (በራሱ ከተሞላ አይንኩት)</summary>
+      <input type="text" id="ggRsUrl" value="${c.url}" placeholder="https://script.google.com/macros/s/…/exec" style="width:100%;margin-top:6px;"></details>
+    <p id="ggRsMsg" style="font-size:0.82rem;color:var(--muted);margin-top:10px;"></p>`,
+    '<button class="btn btn-ghost" onclick="closeModal()">ተወው</button> <button class="btn btn-primary" id="ggRsGo" onclick="ggRestoreGo()">🔍 አረጋግጥ</button>');
+  if(!c.url) document.getElementById('ggRsAdv').open=true;
+}
+let ggRsFound=null;
+async function ggRestoreGo(){
+  const msg=document.getElementById('ggRsMsg'), go=document.getElementById('ggRsGo');
+  if(ggRsFound){
+    try{ localStorage.setItem(KEY+'_before_restore', JSON.stringify(state)); }catch(e){}
+    const cfg={url:ggRsFound.url, key:ggRsFound.key, auto:true, org:ggRsFound.org||document.getElementById('ggRsOrg').value.trim()};
+    localStorage.setItem(GG_CFG_KEY, JSON.stringify(cfg)); ggOkSet(); state=ggRsFound.state; _ggSaveOrig(); location.reload(); return;
+  }
+  const org=document.getElementById('ggRsOrg').value.trim(), key=document.getElementById('ggRsKey').value.trim(), url=(document.getElementById('ggRsUrl').value||'').trim();
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(url)){ document.getElementById('ggRsAdv').open=true; msg.textContent='❌ ይህ መተግበሪያ ከግቢ ጉባኤው ስክሪፕት ጋር ገና አልተገናኘም — የአስተዳዳሪው የላከውን የመተግበሪያ ሊንክ ይክፈቱ ወይም አድራሻውን ከታች ይሙሉ።'; return; }
+  if(!key){ msg.textContent='❌ ADMIN_KEY ያስገቡ'; return; }
+  const prev=localStorage.getItem(GG_CFG_KEY);
+  localStorage.setItem(GG_CFG_KEY, JSON.stringify({url, key, auto:false, org}));
+  msg.textContent='እየተፈተሸ ነው…'; go.disabled=true;
+  try{
+    const j=await ggCall({action:'full_pull'});
+    if(!j.ok){ throw new Error(j.error||'ስህተት'); }
+    if(j.empty){ throw new Error('በደመናው ላይ ምንም ምትኬ የለም'); }
+    const nz=x=>String(x||'').toLowerCase().replace(/[\s.\-_\/,፡።]/g,'');
+    if(j.org && org && nz(j.org).indexOf(nz(org))<0 && nz(org).indexOf(nz(j.org))<0) throw new Error('የግቢ ጉባኤው ስም ከተመዘገበው ጋር አይመሳሰልም');
+    const st=j.state||{}; const n=k=>(st[k]||[]).length;
+    ggRsFound={url, key, org:j.org||org, state:st};
+    msg.innerHTML='✅ ተገኝቷል — ተማሪዎች '+n('students')+'፣ አባላት '+n('members')+'፣ መምህራን '+n('teachers')+'፣ የመጨረሻ ምትኬ፦ '+new Date(j.savedAt).toLocaleString()+'<br>የአሁኑ መረጃ ከመተካቱ በፊት በራሱ ተቀምጦ ይቆያል።';
+    go.textContent='♻️ መልስ';
+  }catch(e){ localStorage.setItem(GG_CFG_KEY, prev||'{}'); if(!prev) localStorage.removeItem(GG_CFG_KEY); msg.textContent='❌ '+ggErr(e); }
+  go.disabled=false;
+}
+function ggRestoreBanner(){
+  try{
+    if(ggHasData() || ggCfg().key || sessionStorage.getItem('gg_rs_dismiss')) return;
+    const host=document.getElementById('dashStats'); if(!host || document.getElementById('ggRsBanner')) return;
+    const d=document.createElement('div'); d.id='ggRsBanner'; d.className='card';
+    d.style.cssText='margin-bottom:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;';
+    d.innerHTML='<span style="font-size:0.9rem;">🔄 <b>አዲስ ስልክ ወይም ኮምፒውተር ነው?</b> ቀድሞ የነበረውን መረጃ ይመልሱ።</span><span><button class="btn btn-primary btn-sm" onclick="ggRestoreModal()">መልስ</button> <button class="btn btn-ghost btn-sm" onclick="sessionStorage.setItem(\'gg_rs_dismiss\',1);this.closest(\'.card\').remove()">አሁን አይደለም</button></span>';
+    host.parentNode.insertBefore(d, host);
+  }catch(e){}
+}
 async function ggAutoRestore(){
   const c=ggCfg(); if(!c.url || !c.key || ggHasData()) return;
   try{ const j=await ggCall({action:'full_pull'}); if(j.ok && !j.empty && j.state && j.state.students){ state=j.state; _ggSaveOrig(); location.reload(); } }catch(e){}
@@ -3278,7 +3435,7 @@ function init(){
 }
 ggReadLink();
 init();
-ggFillCfg();
+ggFillCfg(); setTimeout(ggRestoreBanner, 600);
 ggAutoRestore();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
