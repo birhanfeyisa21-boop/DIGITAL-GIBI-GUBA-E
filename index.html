@@ -590,6 +590,12 @@
       <div class="menu-item" onclick="showPage('forum',this)">
         <div class="menu-icon">💬</div> የቡድን ውይይት
       </div>
+      <div class="menu-item" onclick="showPage('contrib',this)">
+        <div class="menu-icon">💰</div> መዋጮ ኦዲት
+      </div>
+      <div class="menu-item" onclick="showPage('library',this)">
+        <div class="menu-icon">📚</div> መጻሕፍት ቤት
+      </div>
       <div class="menu-item" onclick="showPage('conf',this)">
         <div class="menu-icon">📞</div> ድምፅ/ቪዲዮ ስብሰባ
       </div>
@@ -663,6 +669,11 @@
           <div class="card">
             <h3>🎓 ተማሪዎች በደረጃ</h3>
             <div id="dashLevels"></div>
+          </div>
+
+          <div class="card">
+            <h3>📈 የአባላት እድገት</h3>
+            <div id="dashGrowth"></div>
           </div>
         </div>
       </div>
@@ -1336,6 +1347,18 @@
     </div>
 
     <!-- ===== PAGE: ANNOUNCEMENTS ===== -->
+    <div id="page-contrib" class="page">
+      <h2 class="page-title">💰 መዋጮ ኦዲት</h2>
+      <p class="page-sub">የከፈሉና ያልከፈሉ በክፍል ከስም ጋር፣ በዓመት (ዓ.ም)።</p>
+      <div id="contribBody"></div>
+    </div>
+
+    <div id="page-library" class="page">
+      <h2 class="page-title">📚 መጻሕፍት ቤት</h2>
+      <p class="page-sub">ያስገቡትን ትክክለኛ ጽሑፍ ብቻ ይፈልጋል — ራሱ ምንም ጽሑፍ አይጽፍም። ውጤት ሁልጊዜ ከምንጭ ጥቅሱ ጋር ይታያል።</p>
+      <div id="libraryBody"></div>
+    </div>
+
     <div id="page-conf" class="page">
       <h2 class="page-title">📞 ድምፅ / ቪዲዮ ስብሰባ</h2>
       <p class="page-sub">ስብሰባ ጀምረው ሊንኩን ለአባላት ይላኩ — በስልክም በኮምፒውተርም ከአሳሽ ይገባል፤ መተግበሪያ ወይም መለያ አያስፈልግም።</p>
@@ -1755,6 +1778,8 @@ function showPage(id, el){
   if(id==='idcards') renderIdSelects();
   if(id==='forum') renderPosts();
   if(id==='conf') renderConf();
+  if(id==='contrib') renderContrib();
+  if(id==='library') renderLibrary();
   if(id==='announcements') renderAnnouncements();
   if(id==='messages') renderMessages();
   if(id==='tasks') renderTasks();
@@ -1791,6 +1816,137 @@ function confRecent(){ try{ return JSON.parse(localStorage.getItem(CONF_KEY)||'[
 function confRemember(o){ try{ const l=confRecent().filter(x=>x.room!==o.room); l.unshift(o); localStorage.setItem(CONF_KEY, JSON.stringify(l.slice(0,6))); }catch(e){} }
 function confRoom(){ const a=new Uint8Array(9); crypto.getRandomValues(a); const c='abcdefghjkmnpqrstuvwxyz23456789'; return 'GG-'+Array.from(a).map(x=>c[x%31]).join(''); }
 function confUrl(room, audioOnly){ return CONF_HOST+room+'#config.prejoinPageEnabled=true'+(audioOnly?'&config.startWithVideoMuted=true&config.startAudioOnly=true':''); }
+/* ===== ቀን (ዓ.ም) ===== */
+const EC_EPOCH_JDN=1723856, EC_MONTHS=["መስከረም","ጥቅምት","ኅዳር","ታኅሳስ","ጥር","የካቲት","መጋቢት","ሚያዝያ","ግንቦት","ሰኔ","ሐምሌ","ነሐሴ","ጳጉሜ"];
+function gregorianToJdn(y,m,d){ const a=Math.floor((14-m)/12), yy=y+4800-a, mm=m+12*a-3; return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045; }
+function gcToEc(y,m,d){ const diff=gregorianToJdn(y,m,d)-EC_EPOCH_JDN, r=diff%1461, n=r%365+365*Math.floor(r/1460); return {year:4*Math.floor(diff/1461)+Math.floor(r/365)-Math.floor(r/1460), month:Math.floor(n/30)+1, day:n%30+1}; }
+function ecNow(){ const n=new Date(); return gcToEc(n.getFullYear(), n.getMonth()+1, n.getDate()); }
+function ecYearOf(iso){ const d=new Date(iso); return isNaN(d)?0:gcToEc(d.getFullYear(), d.getMonth()+1, d.getDate()).year; }
+
+/* ===== የአባላት እድገት ግራፍ ===== */
+function growthData(){
+  const by={}; let none=0;
+  state.students.concat(state.members).forEach(p=>{ const y=ecYearOf(p.registeredAt); if(y) by[y]=(by[y]||0)+1; else none++; });
+  const ys=Object.keys(by).map(Number).sort((a,b)=>a-b); if(!ys.length) return {pts:[],none};
+  const cur=ecNow().year, first=Math.max(ys[0],cur-11); let cum=0; const pts=[];
+  ys.forEach(y=>{ if(y<first) cum+=by[y]; });
+  for(let y=first;y<=Math.max(cur,ys[ys.length-1]);y++){ cum+=(by[y]||0); pts.push({y, add:by[y]||0, total:cum}); }
+  return {pts,none};
+}
+function growthSvg(pts){
+  const W=320,H=170,L=30,R=10,T=14,B=28, max=Math.max(1,...pts.map(p=>p.total)), bw=(W-L-R)/pts.length; let g='', line=[];
+  for(let i=0;i<=4;i++){ const yy=H-B-(H-B-T)*i/4; g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#E3E8E4"/><text x="${L-4}" y="${yy+3}" font-size="9" text-anchor="end" fill="#667">${Math.round(max*i/4)}</text>`; }
+  pts.forEach((p,i)=>{
+    const x=L+bw*i+bw/2, hh=(H-B-T)*p.add/max, y=H-B-(H-B-T)*p.total/max;
+    g+=`<rect x="${x-bw*0.3}" y="${H-B-hh}" width="${bw*0.6}" height="${hh}" rx="2" fill="#C9A24A" opacity=".55"><title>${p.y}: +${p.add}</title></rect>`;
+    line.push(x+','+y);
+    g+=`<circle cx="${x}" cy="${y}" r="3" fill="#1a4d2e"><title>${p.y}: ${p.total}</title></circle>`;
+    if(pts.length<=8||i%2===0) g+=`<text x="${x}" y="${H-12}" font-size="9" text-anchor="middle" fill="#667">${p.y}</text>`;
+  });
+  g+=`<polyline points="${line.join(' ')}" fill="none" stroke="#1a4d2e" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="የአባላት እድገት">${g}</svg>`;
+}
+function renderGrowth(){
+  const el=document.getElementById('dashGrowth'); if(!el) return; const d=growthData();
+  el.innerHTML = d.pts.length ? growthSvg(d.pts)+`<p class="empty" style="padding:4px 0;font-size:12px;text-align:start;">● ድምር &nbsp; ▮ በዓመቱ የተጨመሩ · ዓ.ም (ተማሪዎች + አባላት)</p>`+(d.none?`<p class="empty" style="padding:0;font-size:12px;text-align:start;">${d.none} ሰዎች የምዝገባ ቀን የላቸውም</p>`:'') : '<p class="empty" style="padding:20px;">ገና በቂ መረጃ የለም።</p>';
+}
+
+/* ===== መዋጮ ኦዲት ===== */
+const CT={year:0,grp:'',st:'all',view:'year'};
+function ctInit(){ if(!Array.isArray(state.contribs)) state.contribs=[]; if(!state.contribFee||typeof state.contribFee!=='object') state.contribFee={}; if(!CT.year) CT.year=ecNow().year; }
+function ctPeople(){ return state.students.map(p=>({id:p.id,name:p.name,code:p.id,grp:p.class?('ክፍል '+p.class):'ክፍል ያልተመደቡ'})).concat(state.members.map(p=>({id:p.id,name:p.name,code:p.id,grp:'አባላት'}))); }
+function ctSum(id,y){ return state.contribs.reduce((a,r)=>a+((r.pid===id&&+r.year===+y)?(+r.amount||0):0),0); }
+function ctStatus(id,y){ const s=ctSum(id,y), fee=+state.contribFee[y]||0; return s<=0?'unpaid':(fee>0&&s<fee?'partial':'paid'); }
+function ctMark(s){ return s==='paid'?'✅':(s==='partial'?'🟡':'❌'); }
+function ctGroups(){ const g={}; ctPeople().forEach(p=>{ (g[p.grp]=g[p.grp]||[]).push(p); }); return Object.keys(g).sort().filter(k=>!CT.grp||k===CT.grp).map(k=>({name:k,list:g[k].sort((a,b)=>String(a.name).localeCompare(String(b.name)))})); }
+function ctYears(){ const c=ecNow().year, ys={[c]:1,[c-1]:1}; state.contribs.forEach(r=>ys[+r.year]=1); return Object.keys(ys).map(Number).sort((a,b)=>b-a); }
+function ctYearHtml(){
+  const y=CT.year, fee=+state.contribFee[y]||0; let out='';
+  ctGroups().forEach(g=>{
+    const rows=g.list.map(p=>({p,st:ctStatus(p.id,y),sum:ctSum(p.id,y)})).filter(r=>CT.st==='all'||(CT.st==='paid'?r.st==='paid':r.st!=='paid'));
+    if(!rows.length) return;
+    out+=`<h3 style="margin:14px 0 6px;">${esc(g.name)} <span class="page-sub">· የከፈሉ ${rows.filter(r=>r.st==='paid').length}/${rows.length} · ${rows.reduce((a,r)=>a+r.sum,0)} ብር</span></h3><table style="width:100%;border-collapse:collapse;" border="1" cellpadding="5"><thead><tr><th align="left">ስም</th><th>የከፈሉት</th><th>ሁኔታ</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.p.name)}</td><td align="center">${r.sum}${fee?' / '+fee:''}</td><td align="center">${ctMark(r.st)}</td></tr>`).join('')}</tbody></table>`;
+  });
+  return out||'<p class="empty">ምንም አልተገኘም።</p>';
+}
+function ctMatrixHtml(){
+  const ys=ctYears().slice(0,6).reverse(); let out='';
+  ctGroups().forEach(g=>{ out+=`<h3 style="margin:14px 0 6px;">${esc(g.name)}</h3><div style="overflow-x:auto"><table style="border-collapse:collapse;min-width:100%;" border="1" cellpadding="5"><thead><tr><th align="left">ስም</th>${ys.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>${g.list.map(p=>`<tr><td>${esc(p.name)}</td>${ys.map(y=>`<td align="center" title="${ctSum(p.id,y)}">${ctMark(ctStatus(p.id,y))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; });
+  return out||'<p class="empty">ሰዎች አልተመዘገቡም።</p>';
+}
+function renderContrib(){
+  ctInit(); const el=document.getElementById('contribBody'), y=CT.year, fee=+state.contribFee[y]||0;
+  const people=ctPeople().sort((a,b)=>String(a.name).localeCompare(String(b.name))), cnt={paid:0,partial:0,unpaid:0}; let tot=0;
+  people.forEach(p=>{ cnt[ctStatus(p.id,y)]++; tot+=ctSum(p.id,y); });
+  const grps=Array.from(new Set(ctPeople().map(p=>p.grp))).sort();
+  const yr=state.contribs.filter(r=>+r.year===+y).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  el.innerHTML=`<div class="card"><div class="form-grid"><div class="form-field"><label>አመት (ዓ.ም)</label><select id="ctYear">${ctYears().map(v=>`<option value="${v}"${v===y?' selected':''}>${v}</option>`).join('')}</select></div>
+    <div class="form-field"><label>የአመቱ የአባል መዋጮ (ብር፣ አማራጭ)</label><input type="number" min="0" id="ctFee" value="${fee||''}"></div></div>
+    <div class="stats-grid"><div class="stat-card"><div class="stat-num">${cnt.paid}</div><div class="stat-label">✅ የከፈሉ</div></div><div class="stat-card gold"><div class="stat-num">${cnt.partial}</div><div class="stat-label">🟡 በከፊል</div></div><div class="stat-card danger"><div class="stat-num">${cnt.unpaid}</div><div class="stat-label">❌ ያልከፈሉ</div></div><div class="stat-card info"><div class="stat-num">${tot}</div><div class="stat-label">የተሰበሰበ (ብር)</div></div></div></div>
+    <div class="card"><h3>መዋጮ መዝግብ</h3><div class="form-grid"><div class="form-field"><label>ሰው</label><select id="ctP"><option value="">—</option>${people.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} · ${esc(p.grp)}</option>`).join('')}</select></div>
+    <div class="form-field"><label>መጠን (ብር)</label><input type="number" min="1" id="ctAmt" value="${fee||''}"></div>
+    <div class="form-field"><label>ቀን</label><input type="date" id="ctDate" value="${todayStr()}"></div>
+    <div class="form-field"><label>ማስታወሻ</label><input id="ctNote"></div></div><button class="btn btn-primary" id="ctAdd">መዝግብ</button></div>
+    <div class="card"><h3>ኦዲት</h3><div class="btn-row" style="margin-bottom:8px;"><select id="ctView"><option value="year"${CT.view==='year'?' selected':''}>የአንድ አመት ኦዲት</option><option value="matrix"${CT.view==='matrix'?' selected':''}>በአመታት ማትሪክስ</option></select>
+    <select id="ctGrp"><option value="">ሁሉም ክፍላት</option>${grps.map(g=>`<option value="${esc(g)}"${CT.grp===g?' selected':''}>${esc(g)}</option>`).join('')}</select>
+    ${CT.view==='year'?`<select id="ctSt"><option value="all"${CT.st==='all'?' selected':''}>ሁሉም</option><option value="paid"${CT.st==='paid'?' selected':''}>የከፈሉ ብቻ</option><option value="unpaid"${CT.st==='unpaid'?' selected':''}>ያልከፈሉ ብቻ</option></select>`:''}
+    <button class="btn btn-ghost" id="ctPrint">🖨️ አትም / PDF</button><button class="btn btn-ghost" id="ctCsv">⬇️ CSV</button></div>
+    <p class="page-sub">✅ ከፍሏል · 🟡 በከፊል · ❌ አልከፈለም</p><div id="ctBody">${CT.view==='year'?ctYearHtml():ctMatrixHtml()}</div></div>
+    <div class="card"><h3>የ${y} ዓ.ም ክፍያዎች (${yr.length})</h3>${yr.length?yr.slice(0,80).map(r=>{ const p=ctPeople().find(x=>x.id===r.pid); return `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #eee;"><span>${esc(p?p.name:'(የተሰረዘ)')} <span class="page-sub">· ${esc(r.date)}${r.note?' · '+esc(r.note):''}</span></span><span><b>${+r.amount}</b> ብር <button class="btn btn-ghost btn-sm" data-ctdel="${esc(r.id)}">🗑</button></span></div>`; }).join(''):'<p class="empty">ገና የተመዘገበ ክፍያ የለም።</p>'}</div>`;
+  const $=i=>document.getElementById(i);
+  $('ctYear').onchange=function(){ CT.year=+this.value; renderContrib(); };
+  $('ctFee').onchange=function(){ const v=Math.max(0,+this.value||0); if(v) state.contribFee[y]=v; else delete state.contribFee[y]; save(); renderContrib(); };
+  $('ctView').onchange=function(){ CT.view=this.value; renderContrib(); };
+  $('ctGrp').onchange=function(){ CT.grp=this.value; renderContrib(); };
+  if($('ctSt')) $('ctSt').onchange=function(){ CT.st=this.value; renderContrib(); };
+  $('ctAdd').onclick=function(){ const pid=$('ctP').value, amt=+$('ctAmt').value; if(!pid||!(amt>0)){ showToast('ሰው እና መጠን ያስገቡ','error'); return; }
+    state.contribs.push({id:'C'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), pid, year:y, amount:amt, date:$('ctDate').value, note:$('ctNote').value.trim()}); save(); showToast('ተመዝግቧል ✅'); renderContrib(); };
+  el.querySelectorAll('[data-ctdel]').forEach(b=>b.onclick=function(){ if(!confirm('ይህ ክፍያ ይሰረዝ?')) return; const id=b.getAttribute('data-ctdel'); state.contribs=state.contribs.filter(r=>r.id!==id); save(); renderContrib(); });
+  $('ctPrint').onclick=function(){ const w=window.open('','_blank'); if(!w) return; w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>መዋጮ ኦዲት</title><style>body{font-family:sans-serif;padding:26px}table{border-collapse:collapse;margin-bottom:10px}th,td{border:1px solid #999;padding:4px 8px;font-size:13px}</style></head><body><h2>የግቢ ጉባኤ — የመዋጮ ኦዲት'+(CT.view==='year'?' — '+y+' ዓ.ም':'')+'</h2>'+(CT.view==='year'?ctYearHtml():ctMatrixHtml())+'</body></html>'); w.document.close(); w.focus(); setTimeout(()=>w.print(),300); };
+  $('ctCsv').onclick=function(){ const ys=ctYears().slice(0,6).reverse(), q=v=>'"'+String(v).replace(/"/g,'""')+'"', lines=[['ክፍል','ስም'].concat(ys).map(q).join(',')];
+    ctGroups().forEach(g=>g.list.forEach(p=>lines.push([g.name,p.name].concat(ys.map(v=>ctSum(p.id,v)+(ctStatus(p.id,v)==='paid'?'':(ctStatus(p.id,v)==='partial'?' (partial)':' (unpaid)')))).map(q).join(','))));
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='contributions.csv'; a.click(); };
+}
+
+/* ===== መጻሕፍት ቤት (በተጠቃሚ የሚጫኑ ጽሑፎች፤ ጽሑፍ አይፈጥርም) ===== */
+const LIB_COLS=[{id:'bible',n:'መጽሐፍ ቅዱስ (81)'},{id:'gitsawe',n:'ግጻዌ (የአመቱ ንባባት)'},{id:'sinksar',n:'ስንክሳር'},{id:'haymanote_et',n:'ሃይማኖተ አበው ዘኢትዮጵያ'},{id:'haymanote_old',n:'ሃይማኖተ አበው (የጥንቱ)'}];
+const LIB={data:{},loaded:false,col:'all',q:''};
+function libDb(){ return new Promise((res,rej)=>{ if(!window.indexedDB) return rej(new Error('no idb')); const r=indexedDB.open('gg_library_v1',1); r.onupgradeneeded=()=>r.result.createObjectStore('cols'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+function libLoad(){ return libDb().then(db=>new Promise(res=>{ const q=db.transaction('cols','readonly').objectStore('cols').openCursor(); q.onsuccess=()=>{ const c=q.result; if(c){ LIB.data[c.key]=c.value; c.continue(); } else res(); }; q.onerror=()=>res(); })).catch(()=>{}).then(()=>{ LIB.loaded=true; }); }
+function libPut(id,arr){ LIB.data[id]=arr; return libDb().then(db=>new Promise((res,rej)=>{ const tx=db.transaction('cols','readwrite'); tx.objectStore('cols').put(arr,id); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); })); }
+function libDel(id){ delete LIB.data[id]; return libDb().then(db=>new Promise(res=>{ const tx=db.transaction('cols','readwrite'); tx.objectStore('cols').delete(id); tx.oncomplete=res; })).catch(()=>{}); }
+function libParse(txt){
+  txt=String(txt||'').replace(/^\uFEFF/,''); const out=[], t=txt.trim();
+  if(t[0]==='['||t[0]==='{'){ const j=JSON.parse(t); if(Array.isArray(j)) j.forEach(e=>{ if(e&&e.text) out.push({ref:String(e.ref||[e.book,e.ch!=null?e.ch+(e.v!=null?':'+e.v:''):''].filter(Boolean).join(' ')).trim(), text:String(e.text).trim()}); }); else Object.keys(j).forEach(k=>{ if(j[k]) out.push({ref:k,text:String(j[k]).trim()}); }); }
+  else txt.split(/\r?\n/).forEach(l=>{ const m=l.match(/^\s*([^|\t]{1,80}?)\s*(?:\||\t)\s*(.+)$/); if(m) out.push({ref:m[1].trim(),text:m[2].trim()}); });
+  return out;
+}
+function libNorm(x){ return String(x||'').replace(/[\u135D-\u1368፡።፣፤፥፦፧፨,.;:!?"'()\[\]]/g,' ').replace(/\s+/g,' ').trim().toLowerCase(); }
+function libSearch(q,col){
+  const terms=libNorm(q).split(' ').filter(Boolean); if(!terms.length) return []; const out=[];
+  LIB_COLS.forEach(c=>{ if(col!=='all'&&col!==c.id) return; (LIB.data[c.id]||[]).forEach(e=>{ const hay=libNorm(e.ref+' '+e.text); let sc=0; for(const t of terms){ if(hay.indexOf(t)<0) return; sc+=hay.split(t).length-1; } if(libNorm(e.ref).indexOf(terms.join(' '))===0) sc+=50; out.push({c,e,sc}); }); });
+  return out.sort((a,b)=>b.sc-a.sc);
+}
+function libHi(text,q){ let h=esc(text); libNorm(q).split(' ').filter(Boolean).forEach(t=>{ h=h.replace(new RegExp('('+esc(t).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>'); }); return h; }
+function renderLibrary(){
+  const el=document.getElementById('libraryBody');
+  if(!LIB.loaded){ el.innerHTML='<div class="card">…</div>'; libLoad().then(()=>renderLibrary()); return; }
+  const ec=ecNow(), key=libNorm(EC_MONTHS[ec.month-1]+' '+ec.day), rows=[];
+  ['sinksar','gitsawe'].forEach(id=>(LIB.data[id]||[]).forEach(e=>{ const r=libNorm(e.ref); if(r===key||(r.indexOf(key)===0&&!/\d/.test(r.charAt(key.length)))) rows.push({id,e}); }));
+  let h=`<div class="card"><p>ዛሬ፦ <b>${EC_MONTHS[ec.month-1]} ${ec.day}, ${ec.year}</b></p></div>`;
+  if(rows.length) h+=`<div class="card"><h3>የዛሬ ስንክሳር / ግጻዌ</h3>${rows.slice(0,6).map(r=>`<div style="padding:6px 0;border-bottom:1px solid #eee;"><b>${esc(r.e.ref)}</b> <span class="page-sub">· ${esc(LIB_COLS.find(c=>c.id===r.id).n)}</span><div>${esc(r.e.text.slice(0,700))}${r.e.text.length>700?'…':''}</div></div>`).join('')}</div>`;
+  h+=`<div class="card"><h3>ፈልግ</h3><div class="btn-row"><input id="libQ" style="flex:1;min-width:180px" placeholder="ርዕስ ወይም ቃል (ለምሳሌ፦ ጾም)" value="${esc(LIB.q)}"><select id="libCol"><option value="all">ሁሉም መጻሕፍት</option>${LIB_COLS.map(c=>`<option value="${c.id}"${LIB.col===c.id?' selected':''}>${esc(c.n)}</option>`).join('')}</select><button class="btn btn-primary" id="libGo">ፈልግ</button></div><div id="libRes" style="margin-top:10px;"></div></div>
+    <div class="card"><h3>የተጫኑ መጻሕፍት</h3>${LIB_COLS.map(c=>{ const n=(LIB.data[c.id]||[]).length; return `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #eee;"><span>${esc(c.n)} <span class="page-sub">· ${n} ክፍሎች</span></span><span><input type="file" id="libF-${c.id}" accept=".json,.txt,.csv,.tsv" style="display:none"><button class="btn btn-ghost btn-sm" data-libimp="${c.id}">${n?'ተካ':'ጫን'}</button>${n?` <button class="btn btn-ghost btn-sm" data-libdel="${c.id}">🗑</button>`:''}</span></div>`; }).join('')}
+    <details style="margin-top:10px"><summary>የፋይል አሠራር</summary><p class="page-sub">አንድ ፋይል ለአንድ መጽሐፍ። txt — በየመስመሩ «ዘፍጥረት 1:1 | ጽሑፍ»። JSON — [{"ref":"ጥቅምት 10","text":"…"}]። ከትክክለኛ ምንጭ (የራስዎ ሕጋዊ ቅጂ) ይጫኑ፤ ጥቅሱ እንደገባው ነው የሚታየው።</p></details></div>`;
+  el.innerHTML=h; const $=i=>document.getElementById(i);
+  function go(){ LIB.q=$('libQ').value; LIB.col=$('libCol').value; const box=$('libRes'); if(!LIB.q.trim()){ box.innerHTML=''; return; }
+    if(!Object.keys(LIB.data).length){ box.innerHTML='<p class="page-sub">ገና ምንም መጽሐፍ አልተጫነም — ከታች «ጫን» ይጠቀሙ።</p>'; return; }
+    const r=libSearch(LIB.q,LIB.col); box.innerHTML=`<p class="page-sub">${r.length} ውጤት${r.length>40?' (የመጀመሪያዎቹ 40)':''}</p>`+(r.slice(0,40).map(x=>`<div style="padding:8px 0;border-bottom:1px solid #eee;"><b>${esc(x.e.ref)}</b> <span class="page-sub">· ${esc(x.c.n)}</span><div style="margin-top:2px">${libHi(x.e.text,LIB.q)}</div></div>`).join('')||'<p class="page-sub">ምንም አልተገኘም።</p>'); }
+  $('libGo').onclick=go; $('libQ').onkeydown=e=>{ if(e.key==='Enter') go(); }; if(LIB.q) go();
+  el.querySelectorAll('[data-libimp]').forEach(b=>b.onclick=()=>{ const id=b.getAttribute('data-libimp'), f=$('libF-'+id); f.onchange=()=>{ const file=f.files[0]; if(!file) return; const fr=new FileReader(); fr.onload=()=>{ try{ const arr=libParse(fr.result); if(!arr.length) throw new Error('empty'); libPut(id,arr).then(()=>{ showToast('ተጭኗል፦ '+arr.length); renderLibrary(); }).catch(()=>showToast('ማስቀመጥ አልተቻለም','error')); }catch(e){ showToast('ፋይሉ አልተነበበም — አሠራሩን ያረጋግጡ','error'); } }; fr.readAsText(file,'utf-8'); }; f.click(); });
+  el.querySelectorAll('[data-libdel]').forEach(b=>b.onclick=()=>{ if(confirm('ይህ መጽሐፍ ይሰረዝ?')) libDel(b.getAttribute('data-libdel')).then(renderLibrary); });
+}
+
 function renderConf(){
   const el=document.getElementById('confBody'); if(!el) return;
   const rec=confRecent();
@@ -1872,6 +2028,7 @@ function timeAgo(ts){
    DASHBOARD
 ========================================================= */
 function renderDashboard(){
+  try{ renderGrowth(); }catch(e){}
   const totalStudents = state.students.length;
   const totalTeachers = state.teachers.length;
   const totalMembers = state.members.length;

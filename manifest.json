@@ -1,1 +1,20 @@
-{"name":"የግቢ ጉባኤ ሙሉ ሲስተም","short_name":"ግቢ ጉባኤ","lang":"am","start_url":"./index.html","scope":"./","display":"standalone","background_color":"#f0f4f8","theme_color":"#1a4d2e","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
+{
+  "id": "./index.html",
+  "name": "የግቢ ጉባኤ ሙሉ ሲስተም",
+  "short_name": "ግቢ ጉባኤ",
+  "description": "የግቢ ጉባኤ ተማሪዎች፣ መምህራን፣ አቴንዳንስ፣ ውጤት፣ መዋጮ፣ ትምህርትና ስብሰባ አስተዳደር።",
+  "lang": "am",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f0f4f8",
+  "theme_color": "#1a4d2e",
+  "categories": ["education", "lifestyle", "productivity"],
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
