@@ -1732,21 +1732,33 @@
 ========================================================= */
 const KEY = 'gibi_gubae_complete_v1';
 
+/* ናሙና (ምሳሌ) መረጃ — ከዚህ በፊት በራስ ተሞልተው የነበሩ ሰዎችና ጽሑፎች። አሁን አዲስ መተግበሪያ ባዶ ነው የሚጀምረው፤ ቀድሞ የተቀመጡ ናሙናዎች (ያልተነኩ ከሆኑ) አንድ ጊዜ ይጸዳሉ። */
+function purgeSamples(d){
+  try{
+    const emails=['gibre@example.com','maryam@example.com','yohannes@example.com'];
+    const phones=['+251 911 234 567','+251 922 345 678','+251 933 456 789'];
+    const used={}; (d.students||[]).forEach(s=>{ if(s.teacherId) used[s.teacherId]=1; });
+    (d.members||[]).forEach(m=>{ if(m.teacherId) used[m.teacherId]=1; });
+    if(Array.isArray(d.teachers)){
+      d.teachers=d.teachers.filter(t=>!(emails.indexOf(t.email)>=0 && phones.indexOf(t.phone)>=0 && !used[t.id]));
+    }
+    if(Array.isArray(d.posts)){
+      d.posts=d.posts.filter(p=>!(p && p.id===1 && p.author==='ወንድም በረከት' && p.tag==='መንፈሳዊ ትምህርት' && p.likes===12));
+    }
+  }catch(e){}
+  return d;
+}
 function loadState(){
   try{
     const d = JSON.parse(localStorage.getItem(KEY));
-    if(d && d.students) return d;
+    if(d && d.students) return purgeSamples(d);
   }catch(e){}
   return {
     students: [],
-    teachers: [
-      {id:'TCH-001', name:'መምህር ገብረ ሚካኤል ተስፋዬ', phone:'+251 911 234 567', email:'gibre@example.com', role:'የቅዱሳት መጻሕፍት ጥናት', address:'አዲስ አበባ', classes:'መሠረታዊ፣ ከፍተኛ'},
-      {id:'TCH-002', name:'መምህር ማርያም ወርቁ', phone:'+251 922 345 678', email:'maryam@example.com', role:'የኬማ', address:'አዲስ አበባ', classes:'መካከለኛ'},
-      {id:'TCH-003', name:'መምህር ዮሐንስ አለሙ', phone:'+251 933 456 789', email:'yohannes@example.com', role:'የሥርዓተ ቤተ ክርስቲያን', address:'አዲስ አበባ', classes:'ሁሉም'}
-    ],
+    teachers: [],
     members: [],
     attendance: [],
-    posts: defaultPosts(),
+    posts: [],
     announcements: [],
     messages: [],
     tasks: [],
@@ -1757,26 +1769,12 @@ function loadState(){
     roster: [],
     grades: [],
     structures: [],
-    counters: { student: 0, teacher: 3, member: 0 }
+    counters: { student: 0, teacher: 0, member: 0 }
   };
 }
 
-function defaultPosts(){
-  return [
-    {
-      id: 1,
-      author: 'ወንድም በረከት',
-      tag: 'መንፈሳዊ ትምህርት',
-      body: 'የዚህ ሳምንት ትምህርት ስለ አገልጋይነት ነበር። "ማንም ቢሆን ሁሉን በፍቅር ያድርግ" የሚለው ንባብ በጣም ነክቶኛል። እናንተስ እንዴት ተረዳችሁት?',
-      likes: 12, liked: false,
-      time: Date.now() - 3600000 * 5,
-      replies: [
-        {author:'ወይዘሮ ማርያም', body:'እኔም በጣም ተመችቶኛል። ፍቅር ያለው አገልግሎት ውጤታማ ነው።'},
-        {author:'ወንድም ዮሐንስ', body:'እንዲሁም ትዕግስት ያስፈልጋል ብዬ አስባለሁ።'}
-      ]
-    }
-  ];
-}
+/* (ከዚህ በፊት የነበሩ ናሙና ጽሑፎች ተወግደዋል) */
+function defaultPosts(){ return []; }
 
 let state = loadState();
 function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
