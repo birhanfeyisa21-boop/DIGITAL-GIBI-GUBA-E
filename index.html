@@ -715,6 +715,13 @@
           <button class="btn btn-primary" onclick="addStructure()">✅ ጨምር</button>
         </div>
       </div>
+
+      <div class="card" id="trainMgr">
+        <h3>🎓 የስልጠና አይነቶች</h3>
+        <p style="font-size:.84rem;color:var(--muted);margin-bottom:8px">ሌላ የስልጠና አይነት ወይም የኮርስ አይነት ካለ ያክሉ — በክፍል፣ በአቴንዳንስ፣ በሮስተርና በውጤት ምርጫዎች ውስጥ ይታያል።</p>
+        <div id="trainList"></div>
+        <div class="btn-row" style="margin-top:10px"><input type="text" id="trainNew" maxlength="60" placeholder="ለምሳሌ፦ የኮምፒውተር ስልጠና" style="flex:1;min-width:180px"><button class="btn btn-primary btn-sm" onclick="ggAddTraining()">➕ ሌላ የስልጠና አይነት ጨምር</button></div>
+      </div>
     </div>
 
     <!-- ===== PAGE: ATTENDANCE ===== -->
@@ -935,6 +942,14 @@
             </select>
           </div>
           <div class="form-field">
+            <label>የኮርስ ክፍል</label>
+            <select id="regCourseClass" data-ck="class"></select>
+          </div>
+          <div class="form-field">
+            <label>የኮርስ አይነት</label>
+            <select id="regCourseKind" data-ck="kind"></select>
+          </div>
+          <div class="form-field">
             <label>የትምህርት ሰዓት</label>
             <select id="regSession">
               <option value="">-- ይምረጡ --</option>
@@ -1045,6 +1060,10 @@
           <div class="form-field full">
             <label>የሚያስተምራቸው ክፍሎች</label>
             <input type="text" id="tClasses" placeholder="ለምሳሌ፦ መሠረታዊ፣ ከፍተኛ" maxlength="100">
+          </div>
+          <div class="form-field full">
+            <label>የሚያስተምሩት የኮርስ አይነት</label>
+            <select id="tCourseKind" data-ck="kind"></select>
           </div>
         </div>
         <div class="btn-row">
@@ -1220,7 +1239,7 @@
             </select>
           </div>
           <div class="form-field">
-            <label>የትምህርት ዓይነት <span class="req">*</span></label>
+            <label>የስልጠና ዓይነት <span class="req">*</span></label>
             <select id="gradeSubject">
               <option value="">-- ይምረጡ --</option>
               <option value="የቅዱሳት መጻሕፍት ጥናት">የቅዱሳት መጻሕፍት ጥናት</option>
@@ -1774,7 +1793,7 @@ function showPage(id, el){
 
   // Render on demand
   if(id==='dashboard') renderDashboard();
-  if(id==='structure') renderStructures();
+  if(id==='structure'){ renderStructures(); try{ggRenderTrainMgr();}catch(e){} }
   if(id==='attendance') { document.getElementById('attDate').value = todayStr(); renderAttendance(); }
   if(id==='members') renderMembers();
   if(id==='students') renderStudents();
@@ -2099,9 +2118,19 @@ function renderDashboard(){
 function renderStructures(){
   const grid = document.getElementById('structureGrid');
   const defaults = [
+    {name:'የጽሕፈት ቤት (ዋና አመራር)', head:'—', phone:'—', desc:'የግቢ ጉባኤው ዋና አመራር', roles:['ሰብሳቢ','ምክትል ሰብሳቢ','ጸሐፊ'], subs:[]},
+    {name:'ትምህርትና ሥርዓተ ትምህርት ክፍል', head:'—', phone:'—', desc:'የትምህርት እቅድ፣ መምህራንና ክፍል ማስተባበር', roles:['ኃላፊ','ጸሐፊ'], subs:[
+      ['ሥርዓተ ትምህርት ዝግጅት','የደረጃ ትምህርቶችን ማዘጋጀትና ማሻሻል'],
+      ['መምህራን ምደባና ሥልጠና','መምህራንን መመደብ፣ መከታተልና ማሠልጠን'],
+      ['ፈተናና ውጤት','ፈተና ማዘጋጀት፣ ውጤት መያዝና ምረቃ'],
+      ['ቤተ መጻሕፍት','መጻሕፍትና የትምህርት መርጃዎችን ማስተዳደር'],
+      ['መርሐ ግብር ክትትል','የመርሐ ግብሮችን አፈጻጸም መከታተልና መገምገም']]},
+    {name:'መዝሙርና ኪነ ጥበብ ክፍል', head:'—', phone:'—', desc:'መዝሙር፣ ኪነ ጥበብና የዝማሬ ሥልጠና', roles:['ኃላፊ','ጸሐፊ'], subs:[
+      ['መዘምራን','የመዘምራን ቡድን መምራትና ልምምድ'],
+      ['ኪነ ጥበብ','ትያትር፣ ግጥምና ሥነ ጽሑፍ ዝግጅቶች'],
+      ['ዝማሬ ሥልጠና','ለሕፃናትና ለወጣቶች የዝማሬ ትምህርት']]},
     {name:'መንፈሳዊ አማካሪ', head:'—', phone:'—', desc:'መንፈሳዊ መመሪያና የትምህርት ይዘት ማጽደቅ'},
     {name:'አመራር ኮሚቴ', head:'—', phone:'—', desc:'ዕቅዶችን ማስፈጸም፣ ሀብትን መፅጠጠር'},
-    {name:'ትምህርትና አገልግሎት ቡድን', head:'—', phone:'—', desc:'የትምህርት እቅድ፣ መምህራንና ክፍል ማስተባበር'},
     {name:'ዕቅድና አስተዳደር ቡድን', head:'—', phone:'—', desc:'ስብሰባ፣ ቃለ ጉባኤ፣ ሪፖርት'},
     {name:'ገንዘብና ንብረት', head:'—', phone:'—', desc:'በጀት፣ ደረሰኝ፣ የንብረት መዝገብ'},
     {name:'አባላትና በጎ ፈቃድ', head:'—', phone:'—', desc:'የአባላት ተሳትፎ፣ ክስተት አደረጃጀት'}
@@ -2112,6 +2141,8 @@ function renderStructures(){
       <div class="resource-icon">🏛️</div>
       <h4>${esc(s.name)}</h4>
       <p>${esc(s.desc)}</p>
+      ${(s.roles&&s.roles.length)?`<div class="resource-meta" style="flex-wrap:wrap;gap:6px 14px;margin-bottom:6px">${s.roles.map(r=>`<span>👤 <b>${esc(r)}</b>: —</span>`).join('')}</div>`:''}
+      ${(s.subs&&s.subs.length)?`<ul style="margin:6px 0 8px 18px;padding:0;font-size:.82rem;line-height:1.5">${s.subs.map(d=>`<li><b>${esc(d[0])}</b> — <span>${esc(d[1])}</span></li>`).join('')}</ul>`:''}
       <div class="resource-meta">
         <span>👤 ${esc(s.head||'—')}</span>
         <span>📞 ${esc(s.phone||'—')}</span>
@@ -2245,6 +2276,8 @@ function registerStudent(){
     school: document.getElementById('regSchool').value.trim(),
     field: document.getElementById('regField').value.trim(),
     class: document.getElementById('regClass').value,
+    courseClass: document.getElementById('regCourseClass').value,
+    courseKind: document.getElementById('regCourseKind').value,
     session: document.getElementById('regSession').value,
     note: document.getElementById('regNote').value.trim(),
     teacherId: teacherId || '',
@@ -2264,7 +2297,7 @@ function registerStudent(){
 function clearRegisterForm(){
   ['regFullName','regFather','regDob','regPhone','regParentPhone','regAddress','regEmail','regSchool','regField','regNote']
     .forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
-  ['regGender','regEduLevel','regStatus','regClass','regSession','regTeacher']
+  ['regGender','regEduLevel','regStatus','regClass','regCourseClass','regCourseKind','regSession','regTeacher']
     .forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
 }
 
@@ -2351,6 +2384,8 @@ function viewStudent(id){
       <tr><td><strong>ተቋም</strong></td><td>${esc(s.school)||'—'}</td></tr>
       <tr><td><strong>መስክ</strong></td><td>${esc(s.field)||'—'}</td></tr>
       <tr><td><strong>ክፍል</strong></td><td>${esc(s.class)||'—'}</td></tr>
+      <tr><td><strong>የኮርስ ክፍል</strong></td><td>${esc(s.courseClass)||'—'}</td></tr>
+      <tr><td><strong>የኮርስ አይነት</strong></td><td>${esc(s.courseKind)||'—'}</td></tr>
       <tr><td><strong>ሰዓት</strong></td><td>${esc(s.session)||'—'}</td></tr>
       <tr><td><strong>መምህር</strong></td><td>${esc(s.teacherName)}</td></tr>
       <tr><td><strong>ማስታወሻ</strong></td><td>${esc(s.note)||'—'}</td></tr>
@@ -2380,6 +2415,12 @@ function editStudent(id){
           ${['በትምህርት ላይ','ተመርቋል','ለጊዜው አቁሟል'].map(o=>`<option ${s.status===o?'selected':''}>${o}</option>`).join('')}
         </select>
       </div>
+      <div class="form-field"><label>የኮርስ ክፍል</label>
+        <select id="editCourseClass">${ggCkOpts('class',s.courseClass)}</select>
+      </div>
+      <div class="form-field"><label>የኮርስ አይነት</label>
+        <select id="editCourseKind" data-ck="kind">${ggCkOpts('kind',s.courseKind)}</select>
+      </div>
       <div class="form-field full"><label>መምህር</label>
         <select id="editTeacher">${teacherOptions}</select>
       </div>
@@ -2399,6 +2440,8 @@ function saveEditStudent(id){
   s.email = document.getElementById('editEmail').value.trim();
   s.eduLevel = document.getElementById('editEdu').value;
   s.status = document.getElementById('editStatus').value;
+  s.courseClass = document.getElementById('editCourseClass').value;
+  s.courseKind = document.getElementById('editCourseKind').value;
   const tid = document.getElementById('editTeacher').value;
   s.teacherId = tid;
   const t = state.teachers.find(x=>x.id===tid);
@@ -2435,7 +2478,8 @@ function registerTeacher(){
     email: document.getElementById('tEmail').value.trim(),
     role: document.getElementById('tRole').value,
     address: document.getElementById('tAddress').value.trim(),
-    classes: document.getElementById('tClasses').value.trim()
+    classes: document.getElementById('tClasses').value.trim(),
+    courseKind: document.getElementById('tCourseKind').value
   });
   save();
   clearTeacherForm();
@@ -2448,6 +2492,7 @@ function registerTeacher(){
 function clearTeacherForm(){
   ['tFullName','tPhone','tEmail','tAddress','tClasses'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
   const r = document.getElementById('tRole'); if(r) r.value='';
+  const ck = document.getElementById('tCourseKind'); if(ck) ck.value='';
 }
 
 function renderTeachers(){
@@ -2545,7 +2590,7 @@ function renderAttendance(){
         <div class="att-check ${st==='present'?'p':st==='absent'?'a':''}">${st==='present'?'✓':st==='absent'?'✗':''}</div>
         <div class="att-info">
           <div class="n">${esc(s.fullName)}</div>
-          <div class="s">${esc(s.id)} • ${esc(s.class)||'—'}</div>
+          <div class="s">${esc(s.id)} • ${esc(s.class)||'—'}${s.courseKind?' • '+esc(s.courseKind):''}</div>
         </div>
       </div>
     `;
@@ -3581,7 +3626,7 @@ async function ggDoLogin(){
     if(!j.ok){ msg.textContent=j.error||'ስህተት'; return; }
     const ann=(j.announcements||[]).map(a=>`<div style="border-bottom:1px solid var(--border);padding:8px 0;"><strong>${esc(a.title)}</strong><div style="font-size:0.84rem;">${esc(a.body)}</div></div>`).join('')||'<p style="color:var(--muted)">ማስታወቂያ የለም</p>';
     const gr=(j.grades||[]).map(g=>`<tr><td>${esc(g.subject)}</td><td>${esc(g.examType||'')}</td><td>${esc(String(g.score))}</td><td>${esc(g.date||'')}</td></tr>`).join('');
-    const grT=gr?`<div class="table-wrap"><table><thead><tr><th>ትምህርት</th><th>ዓይነት</th><th>ነጥብ</th><th>ቀን</th></tr></thead><tbody>${gr}</tbody></table></div>`:'<p style="color:var(--muted)">ውጤት የለም</p>';
+    const grT=gr?`<div class="table-wrap"><table><thead><tr><th>አጠቃላይ ስልጠና</th><th>ዓይነት</th><th>ነጥብ</th><th>ቀን</th></tr></thead><tbody>${gr}</tbody></table></div>`:'<p style="color:var(--muted)">ውጤት የለም</p>';
     showModal('እንኳን ደህና መጡ — '+j.name, `<h4>📢 ማስታወቂያዎች</h4>${ann}<h4 style="margin-top:14px;">📊 የእርስዎ ውጤት</h4>${grT}`);
   }catch(e){ msg.textContent='ግንኙነት አልተሳካም: '+ggErr(e)+' (የስክሪፕት አድራሻ በዚህ መሣሪያ መሞላት አለበት)'; }
 }
@@ -3606,6 +3651,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',function(){navig
 </script>
 <script>
 const GG_TR={"ልዩ ልዩ ስልጠናዎች":["Various trainings","Leenjiiwwan adda addaa","ዝተፈላለዩ ስልጠናታት"],"መልሶ አምጣ":["Restore","Deebisi","መልሰ ኣምጽእ"],"የግቢ ጉባኤ ሙሉ ሲስተም":["Gibi Gubae Complete System","Sirna Guutuu Gibii Gubaa'ee","ምሉእ ስርዓት ጉባኤ ግቢ"],"በኮድ ግባ":["Sign in with code","Koodiidhaan seeni","ብኮድ እተው"],"ስርዓት እና አመራር":["System & Leadership","Sirna fi Geggeessaa","ስርዓትን መራሕቲን"],"ክፍላት እና አመራር":["Departments & Leadership","Kutaalee fi Geggeessitoota","ክፍልታትን መራሕቲን"],"የግቢ ጉባኤ መዋቅር ክፍል":["Gibi Gubae Structure","Caasaa Gibii Gubaa'ee","መዋቅር ጉባኤ ግቢ"],"አቴንዳንስ (ቋሚ ክፍል)":["Attendance (Permanent section)","Hirmaannaa (Kutaa Dhaabbataa)","ምርካብ (ቀዋሚ ክፍሊ)"],"አባላት":["Members","Miseensota","ኣባላት"],"ተማሪዎች":["Students","Barattoota","ተማሃሮ"],"መምህራን":["Teachers","Barsiisota","መምህራን"],"ትምህርቶች":["Lessons","Barnoota","ትምህርታት"],"ደንብ / ሰነድ":["Rules / Documents","Seeraa / Sanadoota","ደንቢ / ሰነድ"],"ትምህርቶች (ኦዲዮ/ቪዲዮ)":["Lessons (Audio/Video)","Barnoota (Sagalee/Viidiyoo)","ትምህርታት (ድምጺ/ቪድዮ)"],"ሮስተር (የትምህርት ክፍል)":["Roster (Education section)","Roostarii (Kutaa Barnootaa)","ሮስተር (ክፍሊ ትምህርቲ)"],"ውጤት/ነጥብ መዝገብ":["Results / Grade record","Galmee Bu'aa/Qabxii","ምዝገባ ውጽኢት/ነጥቢ"],"መታወቂያ ካርድ":["ID Card","Kaardii Eenyummaa","ካርድ መንነት"],"ግንኙነት":["Communication","Walqunnamtii","ርክብ"],"የቡድን ውይይት":["Group chat","Marii Garee","ናይ ጉጅለ ዝርርብ"],"መዋጮ ኦዲት":["Contribution audit","Odiitii Gumaacha","ኦዲት ምዕዋት"],"መጻሕፍት ቤት":["Library","Mana Kitaabaa","ቤተ-መጽሓፍቲ"],"ድምፅ/ቪዲዮ ስብሰባ":["Audio/Video meeting","Walga'ii Sagalee/Viidiyoo","ናይ ድምጺ/ቪድዮ ጉባኤ"],"ህዝብ ግንኙነት / ሪፖርት":["Public relations / Reports","Hariiroo Uummataa / Gabaasa","ዝምድና ህዝቢ / ሪፖርት"],"መልእክቶች":["Messages","Ergaawwan","መልእኽትታት"],"ሥራ ክትትል":["Work tracking","Hordoffii Hojii","ክትትል ስራሕ"],"መረጃ ልውውጥ":["Information exchange","Wal-jijjiirraa Odeeffannoo","ልውውጥ ሓበሬታ"],"የግራ ውይይት":["Open discussion","Marii Bilisaa","ናጻ ዘተ"],"መሳሪያዎች እና ሰነዶች":["Tools & Documents","Meeshaalee fi Sanadoota","መሳርሒታትን ሰነዳትን"],"መሳሪያዎች":["Tools","Meeshaalee","መሳርሒታት"],"ማረጋገጫ ሰነድ":["Certificates","Ragaa Mirkaneessaa","ሰነድ ምስክርነት"],"ውጤት እና ማስመጣት":["Export & Import","Baasuu fi Galchuu","ምውጻእን ምእታውን"],"የግቢ ጉባኤው አጠቃላይ ሁኔታ፣ ስታቲስቲክስና ፈጣን ተግባራት።":["Overall status, statistics and quick actions of the Gibi Gubae.","Haala waliigalaa, istaatistiksii fi tarkaanfii ariifachiisaa Gibii Gubaa'ee.","ሓፈሻዊ ኩነታት፣ ስታትስቲክስን ቅልጡፋት ተግባራትን ናይ ጉባኤ ግቢ።"],"ፈጣን ተግባራት":["Quick actions","Tarkaanfii ariifachiisaa","ቅልጡፋት ተግባራት"],"ተማሪ መዝግብ":["Register student","Barataa galmeessi","ተማሃራይ መዝግብ"],"መምህር መዝግብ":["Register teacher","Barsiisaa galmeessi","መምህር መዝግብ"],"አቴንዳንስ":["Attendance","Hirmaannaa","ምርካብ"],"መታወቂያ":["ID","Eenyummaa","መንነት"],"የቅርብ ጊዜ እንቅስቃሴዎች":["Recent activity","Sochii dhiyoo","ናይ ቀረባ እዋን ንጥፈታት"],"የቅርብ ጊዜ ማስታወቂያዎች":["Recent announcements","Beeksisa dhiyoo","ናይ ቀረባ እዋን መግለጺታት"],"ተማሪዎች በደረጃ":["Students by level","Barattoota sadarkaan","ተማሃሮ ብደረጃ"],"የአባላት እድገት":["Member growth","Guddina miseensotaa","ዕብየት ኣባላት"],"የግቢ ጉባኤው መዋቅራዊ አካላት፣ ኃላፊዎችና ቡድኖች።":["Structural bodies, leaders and teams of the Gibi Gubae.","Qaama caasaa, geggeessitootaa fi gareewwan Gibii Gubaa'ee.","መዋቅራዊ ኣካላት፣ ሓለፍቲን ጉጅለታትን ናይ ጉባኤ ግቢ።"],"የመዋቅር ክፍሎች":["Structure sections","Kutaalee Caasaa","ክፍልታት መዋቅር"],"አዲስ ክፍል ጨምር":["Add new section","Kutaa haaraa dabali","ሓድሽ ክፍሊ ወስኽ"],"የክፍሉ ስም":["Section name","Maqaa kutaa","ስም ክፍሊ"],"ኃላፊ":["Head","Itti-gaafatamaa","ሓላፊ"],"ስልክ":["Phone","Bilbila","ቴለፎን"],"መግለጫ":["Description","Ibsa","መግለጺ"],"ጨምር":["Add","Dabali","ወስኽ"],"የዕለት አቴንዳንስ መመዝገቢያና የታሪክ መዝገብ።":["Daily attendance entry and history record.","Galmee hirmaannaa guyyaa guyyaa fi seenaa.","ናይ ዕለታዊ ምርካብ መዝገብን ታሪኽ ምዝገባን።"],"የአቴንዳንስ ቀንና ክፍል":["Attendance date & class","Guyyaa fi kutaa hirmaannaa","ዕለትን ክፍልን ምርካብ"],"ቀን":["Date","Guyyaa","ዕለት"],"ክፍል":["Class","Kutaa","ክፍሊ"],"ሁሉም ክፍሎች":["All classes","Kutaalee hunda","ኩሎም ክፍልታት"],"መሠረታዊ":["Basic","Bu'uuraa","መሰረታዊ"],"መካከለኛ":["Intermediate","Giddu-galeessa","ማእከላይ"],"ከፍተኛ":["Advanced","Ol'aanaa","ላዕለዋይ"],"የቅዱሳት መጻሕፍት ጥናት":["Bible study","Qo'annoo Macaafa Qulqulluu","መጽናዕቲ መጽሓፍ ቅዱስ"],"ፍለጋ":["Search","Barbaadi","ድሊ"],"ሁሉንም ተገኝቷል":["All present","Hundi argameera","ኩሉ ተረኺቡ"],"አጽዳ":["Clear","Qulqulleessi","ኣጽሪ"],"መዝግብ":["Save","Galmeessi","መዝግብ"],"የተማሪዎች ዝርዝር":["Student list","Tarree barattootaa","ዝርዝር ተማሃሮ"],"የተመዘገቡ አቴንዳንሶች":["Recorded attendance","Hirmaannaan galmaa'e","ዝተመዝገበ ምርካብ"],"ተገኝተዋል":["Present","Argamaniiru","ተረኺቦም"],"ቀርተዋል":["Absent","Hafaniiru","ኣይመጹን"],"መጠን":["Rate","Hanga","ዓቐን"],"ተግባር":["Action","Tarkaanfii","ተግባር"],"የግቢ ጉባኤው አባላት ዝርዝር፣ ሚናዎችና ኃላፊነቶች።":["Member list, roles and responsibilities of the Gibi Gubae.","Tarree miseensotaa, gahee fi itti-gaafatamummaa Gibii Gubaa'ee.","ዝርዝር ኣባላት፣ ሚናታትን ሓላፍነታትን ናይ ጉባኤ ግቢ።"],"አዲስ አባል መዝግብ":["Register new member","Miseensa haaraa galmeessi","ሓድሽ ኣባል መዝግብ"],"ሙሉ ስም":["Full name","Maqaa guutuu","ምሉእ ስም"],"ሚና":["Role","Gahee","ሚና"],"አባል":["Member","Miseensa","ኣባል"],"መምህር":["Teacher","Barsiisaa","መምህር"],"ጸሐፊ":["Secretary","Barreessaa","ጸሓፊ"],"ገንዘብ ያዥ":["Treasurer","Ejjennoo Maallaqaa","ገንዘብ ሓዋሲ"],"አማካሪ":["Advisor","Gorsaa","መካኸሪ"],"ጾታ":["Gender","Saala","ጾታ"],"ወንድ":["Male","Dhiira","ተባዕታይ"],"ሴት":["Female","Dhalaa","ኣንስተይቲ"],"አድራሻ":["Address","Teessoo","ኣድራሻ"],"የአባላት ዝርዝር":["Member list","Tarree miseensotaa","ዝርዝር ኣባላት"],"ፈልግ":["Search","Barbaadi","ድሊ"],"ሁሉም":["All","Hunda","ኩሎም"],"መለያ":["Tag","Mallattoo","መለለዪ"],"የተማሪዎች ምዝገባ፣ ዝርዝር፣ ማርትዕና ማጥፋት።":["Register, list, edit and delete students.","Barattoota galmeessuu, tarreessuu, gulaaluu fi haquu.","ምዝገባ፣ ዝርዝር፣ ምእራምን ምድምሳስን ናይ ተማሃሮ።"],"አዲስ ተማሪ መዝግብ":["Register new student","Barataa haaraa galmeessi","ሓድሽ ተማሃራይ መዝግብ"],"የአባት ስም":["Father's name","Maqaa abbaa","ስም ኣቦ"],"ይምረጡ --":["-- Select --","-- Filadhu --","-- ምረጽ --"],"የትውልድ ቀን":["Date of birth","Guyyaa dhaloota","ዕለት ልደት"],"የወላጅ ስልክ":["Parent's phone","Bilbila maatii","ቴለፎን ወላዲ"],"ኢሜይል":["Email","Imeelii","ኢሜይል"],"የትምህርት ደረጃ":["Education level","Sadarkaa barnootaa","ደረጃ ትምህርቲ"],"አንደኛ ደረጃ (1-8)":["Primary (1-8)","Sadarkaa Tokkoffaa (1-8)","ቀዳማይ ደረጃ (1-8)"],"ሁለተኛ ደረጃ (9-12)":["Secondary (9-12)","Sadarkaa Lammaffaa (9-12)","ካልኣይ ደረጃ (9-12)"],"ዩኒቨርሲቲ":["University","Yuunivarsiitii","ዩኒቨርሲቲ"],"ኮሌጅ":["College","Kolleejjii","ኮሌጅ"],"የሙያ ስልጠና":["Vocational training","Leenjii Ogummaa","ሞያዊ ስልጠና"],"ሌላ":["Other","Kan biroo","ካልእ"],"የተማሪነት ሁኔታ":["Student status","Haala barataa","ኩነታት ተማሃራይ"],"በትምህርት ላይ":["Studying","Barachaa jira","ኣብ ትምህርቲ"],"ተመርቋል":["Graduated","Eebbifameera","ተመሪቑ"],"ለጊዜው አቁሟል":["Paused for now","Yeroof dhaabeera","ንግዜኡ ኣቋሪጹ"],"የሚማርበት ተቋም":["Institution","Dhaabbata itti baratu","ዝመሃረሉ ትካል"],"መስክ / ክፍል":["Field / Department","Damee / Kutaa","ዓውዲ / ክፍሊ"],"የግቢ ጉባኤ ክፍል":["Gibi Gubae class","Kutaa Gibii Gubaa'ee","ክፍሊ ጉባኤ ግቢ"],"የትምህርት ሰዓት":["Class time","Sa'aatii barnootaa","ሰዓት ትምህርቲ"],"ጠዋት":["Morning","Ganama","ንጉሆ"],"ከሰዓት":["Afternoon","Waaree booda","ድሕሪ ቐትሪ"],"ምሽት":["Evening","Galgala","ምሸት"],"ቅዳሜ":["Saturday","Sanbata","ቀዳም"],"እሁድ":["Sunday","Dilbata","ሰንበት"],"የተመደበ መምህር":["Assigned teacher","Barsiisaa ramadame","ዝተመደበ መምህር"],"መምህር ይምረጡ --":["-- Select teacher --","-- Barsiisaa filadhu --","-- መምህር ምረጽ --"],"ማስታወሻ":["Note","Yaadannoo","ሓሳብ"],"ደረጃ":["Level","Sadarkaa","ደረጃ"],"አንደኛ ደረጃ":["Primary","Sadarkaa Tokkoffaa","ቀዳማይ ደረጃ"],"ሁለተኛ ደረጃ":["Secondary","Sadarkaa Lammaffaa","ካልኣይ ደረጃ"],"ሙያ":["Vocational","Ogummaa","ሞያ"],"የተመደበ":["Assigned","Ramadame","ዝተመደበ"],"ያልተመደበ":["Unassigned","Hin ramadamne","ዘይተመደበ"],"አትም":["Print","Maxxansi","ሓትም"],"ሁኔታ":["Status","Haala","ኩነታት"],"የመምህራን ምዝገባ፣ ዝርዝርና ለተማሪዎች ምደባ።":["Register and list teachers and assign them to students.","Barsiisota galmeessuu, tarreessuu fi barattootaaf ramaduu.","ምዝገባ፣ ዝርዝርን ምምዳብ መምህራን ንተማሃሮ።"],"አዲስ መምህር መዝግብ":["Register new teacher","Barsiisaa haaraa galmeessi","ሓድሽ መምህር መዝግብ"],"የሥርዓተ ቤተ ክርስቲያን":["Church order","Sirna Mana Kiristaanaa","ሥርዓተ ቤተ ክርስቲያን"],"የኬማ":["Kema","Kemaa","ኬማ"],"የመዝሙር":["Hymns","Faarfannaa","መዝሙር"],"መንፈሳዊ አማካሪ":["Spiritual advisor","Gorsaa Hafuuraa","መንፈሳዊ መካኸሪ"],"አጠቃላይ":["General","Waliigalaa","ሓፈሻዊ"],"የሚያስተምራቸው ክፍሎች":["Classes taught","Kutaalee inni/ishiin barsiisu","ዝምህሮም ክፍልታት"],"የተመዘገቡ መምህራን":["Registered teachers","Barsiisota galmaa'an","ዝተመዝገቡ መምህራን"],"የተመደቡ ተማሪዎች":["Assigned students","Barattoota ramadaman","ዝተመደቡ ተማሃሮ"],"የግቢ ጉባኤው ደንቦች፣ መመሪያዎችና ሰነዶች።":["Rules, directives and documents of the Gibi Gubae.","Seerota, qajeelfamoota fi sanadoota Gibii Gubaa'ee.","ደንብታት፣ መምርሒታትን ሰነዳትን ናይ ጉባኤ ግቢ።"],"የተመዘገቡ ሰነዶች":["Registered documents","Sanadoota galmaa'an","ዝተመዝገቡ ሰነዳት"],"አዲስ ሰነድ ጨምር":["Add new document","Sanada haaraa dabali","ሓድሽ ሰነድ ወስኽ"],"ርዕስ":["Title","Mata-duree","ኣርእስቲ"],"ዓይነት":["Type","Gosa","ዓይነት"],"ደንብ":["Rule","Seera","ደንቢ"],"መመሪያ":["Directive","Qajeelfama","መምርሒ"],"ሰነድ":["Document","Sanada","ሰነድ"],"ውሳኔ":["Decision","Murtii","ውሳነ"],"ይዘት / አጭር መግለጫ":["Content / Summary","Qabiyyee / Cuunfaa","ትሕዝቶ / ሓጺር መግለጺ"],"ኦዲዮ":["Audio","Sagalee","ድምጺ"],"ቪዲዮ":["Video","Viidiyoo","ቪድዮ"],"የተቀዱ ትምህርቶች፣ ስብከቶችና የመምህራን ትምህርቶች።":["Recorded lessons, sermons and teachers' lessons.","Barnoota waraabame, lallaba fi barnoota barsiisotaa.","ዝተቐድሑ ትምህርታት፣ ስብከታትን ትምህርታት መምህራንን።"],"አዲስ ትምህርት ጨምር":["Add new lesson","Barnoota haaraa dabali","ሓድሽ ትምህርቲ ወስኽ"],"ሊንክ (URL)":["Link (URL)","Hidhaa (URL)","ሊንክ (URL)"],"በየክፍሉ የሚገኙ ተማሪዎች፣ መምህራንና የጊዜ ሰሌዳ።":["Students, teachers and schedule per class.","Barattoota, barsiisota fi sagantaa kutaa kutaan.","ብክፍሊ ዘለዉ ተማሃሮ፣ መምህራንን ናይ ግዜ መስርሕን።"],"የጊዜ ሰሌዳ":["Schedule","Sagantaa","ናይ ግዜ መስርሕ"],"ሰኞ":["Monday","Wiixata","ሰኑይ"],"ማክሰኞ":["Tuesday","Kibxata","ሰሉስ"],"ረቡዕ":["Wednesday","Roobii","ረቡዕ"],"ሐሙስ":["Thursday","Kamisa","ሓሙስ"],"ዓርብ":["Friday","Jimaata","ዓርቢ"],"ሰዓት":["Time","Sa'aatii","ሰዓት"],"የትምህርቱ ርዕስ":["Lesson topic","Mata-duree barnootaa","ኣርእስቲ ትምህርቲ"],"የጊዜ ሰሌዳ ዝርዝር":["Schedule list","Tarree sagantaa","ዝርዝር ናይ ግዜ መስርሕ"],"የተማሪዎችን ውጤት ይመዝግቡ፣ ያርትዑና ሪፖርት ያውጡ።":["Record and edit student results and produce reports.","Bu'aa barattootaa galmeessaa, gulaalaa fi gabaasa baasaa.","ውጽኢት ተማሃሮ ምዝገቡ፣ ኣርትዑን ሪፖርት ኣውጽኡን።"],"አዲስ ውጤት መዝግብ":["Record new result","Bu'aa haaraa galmeessi","ሓድሽ ውጽኢት መዝግብ"],"ተማሪ":["Student","Barataa","ተማሃራይ"],"ተማሪ ይምረጡ --":["-- Select student --","-- Barataa filadhu --","-- ተማሃራይ ምረጽ --"],"የትምህርት ዓይነት":["Subject","Gosa barnootaa","ዓይነት ትምህርቲ"],"የኦርቶዶክስ ትምህርት":["Orthodox teaching","Barnoota Ortodoksii","ትምህርቲ ኦርቶዶክስ"],"የፈተና ዓይነት":["Exam type","Gosa qormaataa","ዓይነት ፈተና"],"ሩብ ዓመት":["Quarter","Kurmaana","ርብዒ ዓመት"],"ግማሽ ዓመት":["Semester","Walakkaa waggaa","ፍርቂ ዓመት"],"ዓመታዊ":["Annual","Waggaa waggaan","ዓመታዊ"],"መደበኛ":["Regular","Idilee","ንቡር"],"ነጥብ (ከ100)":["Score (out of 100)","Qabxii (100 keessaa)","ነጥቢ (ካብ 100)"],"የውጤት ዝርዝር":["Result list","Tarree bu'aa","ዝርዝር ውጽኢት"],"ፈተና":["Exam","Qormaata","ፈተና"],"ነጥብ":["Score","Qabxii","ነጥቢ"],"የተማሪ መታወቂያ ይፍጠሩ፣ ያትሙ ወይም ያውርዱ።":["Create, print or download a student ID.","Eenyummaa barataa uumi, maxxansi ykn buusi.","መንነት ተማሃራይ ፍጠሩ፣ ሓትሙ ወይ ኣውርዱ።"],"ተማሪ ይምረጡ":["Select a student","Barataa filadhu","ተማሃራይ ምረጹ"],"መታወቂያ ለማየት ተማሪ ይምረጡ":["Select a student to view the ID","Eenyummaa ilaaluuf barataa filadhu","መንነት ንምርኣይ ተማሃራይ ምረጹ"],"ሁሉንም አሳይ":["Show all","Hunda agarsiisi","ኩሉ ኣርኢ"],"መንፈሳዊ ትምህርት፣ የአመራር ልምድና የአገልግሎት ሀሳቦችን ያካፍሉ።":["Share spiritual teaching, leadership experience and service ideas.","Barnoota hafuuraa, muuxannoo geggeessuu fi yaada tajaajilaa qoodaa.","መንፈሳዊ ትምህርቲ፣ ተመክሮ መሪሕነትን ሓሳባት ኣገልግሎትን ኣካፍሉ።"],"አዲስ ሀሳብ":["New idea","Yaada haaraa","ሓድሽ ሓሳብ"],"ስም":["Name","Maqaa","ስም"],"ምድብ":["Category","Ramaddii","ምድብ"],"መንፈሳዊ ትምህርት":["Spiritual teaching","Barnoota hafuuraa","መንፈሳዊ ትምህርቲ"],"አመራር":["Leadership","Geggeessuu","መሪሕነት"],"አስተዳደር":["Administration","Bulchiinsa","ምሕደራ"],"የአገልግሎት ልምድ":["Service experience","Muuxannoo tajaajilaa","ተመክሮ ኣገልግሎት"],"ጥያቄ":["Question","Gaaffii","ሕቶ"],"ሀሳብ":["Idea","Yaada","ሓሳብ"],"አስተላልፍ":["Post","Ergi","ኣመሓላልፍ"],"የከፈሉና ያልከፈሉ በክፍል ከስም ጋር፣ በዓመት (ዓ.ም)።":["Who has and has not paid, by class with names, per year (E.C.).","Warra kaffalanii fi hin kaffalle kutaan maqaa waliin, waggaan (G.L.).","ዝኸፈሉን ዘይኸፈሉን ብክፍሊ ምስ ስም፣ ብዓመት (ዓ.ም)።"],"ያስገቡትን ትክክለኛ ጽሑፍ ብቻ ይፈልጋል — ራሱ ምንም ጽሑፍ አይጽፍም። ውጤት ሁልጊዜ ከምንጭ ጥቅሱ ጋር ይታያል።":["It only searches the exact text you enter — it writes no text itself. Results always show with their source citation.","Barruu isin galchitan qofa barbaada — ofiisaan homaa hin barreessu. Bu'aan yeroo hunda wabii maddaa waliin mul'ata.","ዘእተኹምዎ ልክዕ ጽሑፍ ጥራይ ይደልይ — ባዕሉ ዋላ ሓንቲ ኣይጽሕፍን። ውጽኢት ኩሉ ግዜ ምስ ምንጪ ጥቅሲ ይርአ።"],"ስብሰባ ጀምረው ሊንኩን ለአባላት ይላኩ — በስልክም በኮምፒውተርም ከአሳሽ ይገባል፤ መተግበሪያ ወይም መለያ አያስፈልግም።":["Start a meeting and send the link to members — it opens in a browser on phone or computer; no app or account needed.","Walga'ii eegaltanii liinkii miseensotaaf ergaa — bilbilaan yookaan kompiitaraan biraawuzarii irratti banama; app yookaan akkaawuntii hin barbaachisu.","ጉባኤ ጀሚርኩም ሊንኩ ንኣባላት ስደዱ — ብተሌፎንን ብኮምፒተርን ኣብ ብራውዘር ይኽፈት፤ ኣፕ ወይ ኣካውንት ኣየድልይን።"],"ማስታወቂያዎች፣ ሪፖርቶችና ይፋዊ መልእክቶች።":["Announcements, reports and official messages.","Beeksisoota, gabaasaalee fi ergaawwan idilee.","መግለጺታት፣ ሪፖርታትን ወግዓዊ መልእኽትታትን።"],"አዲስ ማስታወቂያ":["New announcement","Beeksisa haaraa","ሓድሽ መግለጺ"],"ማስታወቂያ":["Announcement","Beeksisa","መግለጺ"],"ሪፖርት":["Report","Gabaasa","ሪፖርት"],"አስቸኳይ":["Urgent","Ariifachiisaa","ህጹጽ"],"ይዘት":["Content","Qabiyyee","ትሕዝቶ"],"የግል መልእክቶች፣ ጥያቄዎችና ምላሾች።":["Private messages, questions and replies.","Ergaawwan dhuunfaa, gaaffilee fi deebiiwwan.","ውልቃዊ መልእኽትታት፣ ሕቶታትን መልሲታትን።"],"አዲስ መልእክት":["New message","Ergaa haaraa","ሓድሽ መልእኽቲ"],"ከ":["From","Irraa","ካብ"],"ለ":["To","Gara","ን"],"መልእክት":["Message","Ergaa","መልእኽቲ"],"ላክ":["Send","Ergi","ስደድ"],"የተሰጡ ተግባራት፣ ኃላፊዎችና የመጨረሻ ቀኖች።":["Assigned tasks, owners and deadlines.","Hojiiwwan kennaman, itti-gaafatamtoota fi guyyaa dhumaa.","ዝተዋህቡ ተግባራት፣ ሓለፍቲን ናይ መወዳእታ ዕለታትን።"],"አዲስ ተግባር":["New task","Hojii haaraa","ሓድሽ ተግባር"],"የተግባሩ ርዕስ":["Task title","Mata-duree hojii","ኣርእስቲ ተግባር"],"የመጨረሻ ቀን":["Deadline","Guyyaa dhumaa","ናይ መወዳእታ ዕለት"],"በሂደት":["In progress","Hojjetamaa jira","ኣብ ሂደት"],"ተጠናቅቋል":["Completed","Xumurameera","ተጻፊሑ"],"ዘግይቷል":["Overdue","Turameera","ደንጊዩ"],"የተግባራት ዝርዝር":["Task list","Tarree hojiiwwanii","ዝርዝር ተግባራት"],"የአባላት አስተያየት፣ ጥያቄና ምላሽ።":["Members' feedback, questions and replies.","Yaada miseensotaa, gaaffii fi deebii.","ርእይቶ ኣባላት፣ ሕቶን መልስን።"],"አስተያየት ይስጡ":["Give feedback","Yaada kenni","ርእይቶ ሃቡ"],"አስተያየት":["Feedback","Yaada","ርእይቶ"],"ቅሬታ":["Complaint","Komii","ቅርታ"],"ምስጋና":["Thanks","Galata","ምስጋና"],"ነጻ ውይይት፣ ሀሳብ ልውውጥና የቡድን ምክክር።":["Open discussion, exchange of ideas and group consultation.","Marii bilisaa, wal-jijjiirraa yaadaa fi mari'annoo garee.","ናጻ ዘተ፣ ልውውጥ ሓሳብን ናይ ጉጅለ ምኽሪን።"],"አዲስ ርዕስ":["New topic","Mata-duree haaraa","ሓድሽ ኣርእስቲ"],"አስተዋጽኦ አድራጊ":["Contributor","Gumaachaa","ተሓጋጋዚ"],"ጠቃሚ መሳሪያዎች፣ ካልኩሌተሮችና መቀየሪያዎች።":["Useful tools, calculators and converters.","Meeshaalee faayidaa qaban, kaalkuleetarootaa fi jijjiirtoota.","ጠቓሚ መሳርሒታት፣ ካልኩሌተራትን ለዋጢታትን።"],"የቀን መቁጠሪያ":["Calendar","Kaalaandarii","ካላንደር"],"የኢትዮጵያና የግሪጎሪያን ቀን መቀየሪያ":["Ethiopian–Gregorian date converter","Jijjiirraa guyyaa Itoophiyaa–Giregoorii","ለዋጢ ዕለት ኢትዮጵያን ግሪጎርያንን"],"ክፈት":["Open","Bani","ክፈት"],"የውጤት ካልኩሌተር":["Grade calculator","Kaalkuleetara bu'aa","ካልኩሌተር ውጽኢት"],"የተማሪዎችን አማካይ ነጥብ ማስላት":["Calculate students' average score","Giddugaleessa qabxii barattootaa herreguu","ማእከላይ ነጥቢ ተማሃሮ ምስላዕ"],"የአቴንዳንስ ሪፖርት":["Attendance report","Gabaasa hirmaannaa","ሪፖርት ምርካብ"],"ወርሃዊ እና ዓመታዊ ሪፖርት ማውጣት":["Produce monthly and annual reports","Gabaasa ji'aa fi waggaa baasuu","ወርሓዊን ዓመታዊን ሪፖርት ምውጻእ"],"የሰነድ አብነት":["Document template","Fakkeenya sanadaa","ኣብነት ሰነድ"],"የተለያዩ ሰነዶች አብነት (template)":["Templates for various documents","Fakkeenya sanadoota adda addaa (template)","ኣብነት ዝተፈላለዩ ሰነዳት (template)"],"የተለያዩ ማረጋገጫዎችና የምስክር ወረቀቶች።":["Various confirmations and certificates.","Mirkaneessitootaa fi ragaalee adda addaa.","ዝተፈላለዩ ምርግጋጽን ምስክር ወረቀታትን።"],"የተማሪነት ማረጋገጫ":["Student confirmation","Mirkaneessa barataa","ምርግጋጽ ተማሃራይነት"],"ለተማሪዎች የሚሰጥ ማረጋገጫ ደብዳቤ":["Confirmation letter issued to students","Ragaa barattootaaf kennamu","ንተማሃሮ ዝወሃብ ደብዳቤ ምርግጋጽ"],"ፍጠር":["Create","Uumi","ፍጠር"],"የመምህርነት ማረጋገጫ":["Teacher confirmation","Mirkaneessa barsiisummaa","ምርግጋጽ መምህርነት"],"ለመምህራን የሚሰጥ ማረጋገጫ":["Confirmation issued to teachers","Ragaa barsiisotaaf kennamu","ንመምህራን ዝወሃብ ምርግጋጽ"],"የአባልነት ማረጋገጫ":["Membership confirmation","Mirkaneessa miseensummaa","ምርግጋጽ ኣባልነት"],"ለአባላት የሚሰጥ ማረጋገጫ ደብዳቤ":["Confirmation letter issued to members","Ragaa miseensotaaf kennamu","ንኣባላት ዝወሃብ ደብዳቤ ምርግጋጽ"],"የአገልግሎት ማረጋገጫ":["Service confirmation","Mirkaneessa tajaajilaa","ምርግጋጽ ኣገልግሎት"],"የአገልግሎት ጊዜ ማረጋገጫ ሰነድ":["Service period confirmation document","Sanada mirkaneessa yeroo tajaajilaa","ሰነድ ምርግጋጽ ግዜ ኣገልግሎት"],"ሁሉንም ውሂብ ማውጣት፣ ማስመጣትና ማጠራቀም።":["Export, import and store all data.","Daataa hunda baasuu, galchuu fi kuusuu.","ኩሉ ዳታ ምውጻእ፣ ምእታውን ምዕቃብን።"],"ደመና ምትኬ እና የአባል መግቢያ":["Cloud backup & member login","Baackaappii duumessaa fi seensa miseensaa","ደመና ምትኬን መእተዊ ኣባልን"],"ይህ የግቢ ጉባኤው የራሱ ስክሪፕት ነው። አድራሻውና ሚስጥሩ በዚህ መሣሪያ ላይ ብቻ ይቀመጣሉ (ወደ ይፋዊው ኮድ አይገቡም)።":["This is the Gibi Gubae's own script. Its address and secret are kept only on this device (they do not go into the public code).","Kun iskiriiptii mataa Gibii Gubaa'ee dha. Teessoon fi icciitiin meeshaa kana irratti qofa kuufamu (koodii ifaa keessa hin galan).","እዚ ናይ ጉባኤ ግቢ ባዕሉ ስክሪፕት እዩ። ኣድራሻን ምስጢርን ኣብዚ መሳርሒ ጥራይ ይዕቆቡ (ናብ ህዝባዊ ኮድ ኣይኣትዉን)።"],"የስክሪፕት አድራሻ (/exec)":["Script address (/exec)","Teessoo iskiriiptii (/exec)","ኣድራሻ ስክሪፕት (/exec)"],"የግቢ ጉባኤው ስም (አዲስ ስልክ ላይ መመለሻ ለማረጋገጥ)":["Gibi Gubae name (to confirm restore on a new phone)","Maqaa Gibii Gubaa'ee (bilbila haaraa irratti deebisuuf mirkaneessuuf)","ስም ጉባኤ ግቢ (ኣብ ሓዲሽ ተሌፎን ንምምላስ ንምርግጋጽ)"],"ADMIN_KEY (የአስተዳዳሪ ሚስጥር)":["ADMIN_KEY (administrator secret)","ADMIN_KEY (icciitii bulchaa)","ADMIN_KEY (ምስጢር ኣመሓዳሪ)"],"አስቀምጥ":["Save","Olkaa'i","ኣቐምጥ"],"ግንኙነት ፈትሽ":["Test connection","Walqunnamtii mirkaneessi","ርክብ ፈትሽ"],"ወደ ደመና ላክ":["Send to cloud","Gara duumessaatti ergi","ናብ ደመና ስደድ"],"ከደመና መልስ":["Restore from cloud","Duumessa irraa deebisi","ካብ ደመና መልስ"],"የአባላት መግቢያ አዘምን":["Update member login","Seensa miseensotaa haaromsi","መእተዊ ኣባላት ኣሐድስ"],"የአባል መግቢያ ሊንክ ቅዳ":["Copy member login link","Liinkii seensa miseensaa waraabi","ሊንክ መእተዊ ኣባል ቅዳሕ"],"ለውጥ ሲደረግ በራስ-ሰር ምትኬ ላክ":["Send a backup automatically on every change","Jijjiirraa yeroo godhamu ofumaan baackaappii ergi","ለውጢ ምስ ኮነ ባዕሉ ምትኬ ስደድ"],"አዲስ ስልክ/ኮምፒውተር?":["New phone/computer?","Bilbila/kompiitaraa haaraa?","ሓዲሽ ተሌፎን/ኮምፒተር?"],"ከላይ የስክሪፕት አድራሻና ሚስጥር ቁልፍ አስገብተው «💾 አስቀምጥ» ከዚያ «⬇️ ከደመና መልስ» ይጫኑ — ቀድሞ የተሞላው ሁሉ ይመለሳል (ውሂብ ባዶ ከሆነ በራሱም ይመለሳል)።":["Enter the script address and secret key above, press \"Save\", then \"Restore from cloud\" — everything entered before returns (it also restores by itself if the data is empty).","Teessoo iskiriiptii fi furtuu icciitii olitti galchuun «Olkaa'i» ergasii «Duumessa irraa deebisi» tuqaa — wanti duraan guutame hundi deebi'a (daataan duwwaa yoo ta'e ofumaanuu deebi'a).","ኣድራሻ ስክሪፕትን ናይ ምስጢር ቁልፊን ኣብ ላዕሊ ኣእትዩም «ኣቐምጥ» ደሓር «ካብ ደመና መልስ» ጠውቑ — ቅድሚ ሕጂ ዝተመልአ ኩሉ ይምለስ (ዳታ ባዶ እንተኾይኑ ባዕሉ እውን ይምለስ)።"],"የአንድ አባል PIN ብቻ አጥፋ":["Reset only one member's PIN","PIN miseensa tokkoo qofa haqi","ናይ ሓደ ኣባል PIN ጥራይ ደምስስ"],"ሌሎች አይነኩም)፦":["(others are not affected):","(warroonni biroo hin tuqamani):","(ካልኦት ኣይትንከፉን)፦"],"የዚህን PIN አጥፋ":["Delete this PIN","PIN kana haqi","ናይዚ PIN ደምስስ"],"ቀድሞ የነበረ መረጃ መልስ (በስምና በቁልፍ)":["Restore earlier data (by name and key)","Odeeffannoo duraan ture deebisi (maqaa fi furtuudhaan)","ድሕሪ ቀደም ዝነበረ ሓበሬታ መልስ (ብስምን ብቁልፊን)"],"ውሂብ ማውጣት":["Export data","Daataa baasuu","ዳታ ምውጻእ"],"ሁሉንም ተማሪዎች (CSV)":["All students (CSV)","Barattoota hunda (CSV)","ኩሎም ተማሃሮ (CSV)"],"የተማሪዎችን ዝርዝር በCSV ማውረድ":["Download the student list as CSV","Tarree barattootaa CSV'n buusuu","ዝርዝር ተማሃሮ ብCSV ምውራድ"],"አውርድ":["Download","Buusi","ኣውርድ"],"ሙሉ ውሂብ (JSON)":["Full data (JSON)","Daataa guutuu (JSON)","ምሉእ ዳታ (JSON)"],"ሁሉንም ውሂብ በJSON ማስቀመጥ":["Save all data as JSON","Daataa hunda JSON'n olkaa'uu","ኩሉ ዳታ ብJSON ምቕማጥ"],"ውሂብ ማስመጣት":["Import data","Daataa galchuu","ዳታ ምእታው"],"ከJSON ፋይል ውሂብ መመለስ":["Restore data from a JSON file","Faayila JSON irraa daataa deebisuu","ካብ JSON ፋይል ዳታ ምምላስ"],"ምረጥ":["Choose","Filadhu","ምረጽ"],"ሁሉንም አጥፋ":["Delete all","Hunda haqi","ኩሉ ደምስስ"],"ሁሉንም ውሂብ ማጥፋት (መመለስ አይቻልም)":["Delete all data (cannot be undone)","Daataa hunda haquu (deebisuun hin danda'amu)","ኩሉ ዳታ ምድምሳስ (ምምላስ ኣይከኣልን)"],"አጥፋ":["Delete","Haqi","ደምስስ"],"አጠቃላይ ስታቲስቲክስ":["Overall statistics","Istaatistiksii waliigalaa","ሓፈሻዊ ስታትስቲክስ"],"ስርዓት እና አመራር • ትምህርቶች • ግንኙነት • መሳሪያዎች":["System & Leadership • Lessons • Communication • Tools","Sirna fi Geggeessaa • Barnoota • Walqunnamtii • Meeshaalee","ስርዓትን መራሕቲን • ትምህርታት • ርክብ • መሳርሒታት"],"ሁሉም ውሂብ በአሳሽዎ ውስጥ በlocalStorage ይቀመጣል። ወቅታዊ ምትኬ ያድርጉ።":["All data is stored in your browser's localStorage. Make regular backups.","Daataan hundi biraawuzarii keessan keessatti localStorage'n kuufama. Yeroo yeroon baackaappii godhaa.","ኩሉ ዳታ ኣብ ብራውዘርኩም ብlocalStorage ይቕመጥ። ወቅታዊ ምትኬ ግበሩ።"],"መዋጮ መዝግብ":["Record contribution","Gumaacha galmeessi","መዋጮ መዝግብ"],"መጀመሪያ የስክሪፕት አድራሻ ያስቀምጡ":["First save the script address","Dura teessoo iskiriiptii olkaa'aa","ቅድም ኣድራሻ ስክሪፕት ኣቐምጡ"],"መጠን (ብር)":["Amount (Birr)","Hanga (Birrii)","መጠን (ብር)"],"ሙሉ ስም ያስፈልጋል":["Full name is required","Maqaan guutuun ni barbaachisa","ምሉእ ስም የድሊ"],"ሙሉ ውሂብ ተቀምጧል! 💾":["Full data saved! 💾","Daataan guutuun olkaa'ameera! 💾","ምሉእ ዳታ ተቐሚጡ! 💾"],"ሚዲያውን ማጥፋት ይፈልጋሉ?":["Do you want to delete this media?","Miidiyaa kana haquu barbaaddaa?","ነዚ ሚድያ ክትድምስስዎ ትደልዩ ዲኹም?"],"ማስቀመጥ አልተቻለም":["Could not save","Olkaa'uun hin danda'amne","ምቕማጥ ኣይተኻኣለን"],"ማስታወቂያ ተለጠፈ! 📢":["Announcement posted! 📢","Beeksisni maxxanfameera! 📢","መግለጺ ተለጢፉ! 📢"],"ማስታወቂያውን ማጥፋት ይፈልጋሉ?":["Do you want to delete the announcement?","Beeksisa kana haquu barbaaddaa?","ነዚ መግለጺ ክትድምስስዎ ትደልዩ ዲኹም?"],"ማጥፋት ይፈልጋሉ?":["Do you want to delete this?","Haquu barbaaddaa?","ክትድምስስዎ ትደልዩ ዲኹም?"],"ምትኬ አልተላከም":["Backup was not sent","Baackaappiin hin ergamne","ምትኬ ኣይተላእከን"],"ምትኬ ወደ ደመና ተልኳል ☁️":["Backup sent to the cloud ☁️","Baackaappiin gara duumessaatti ergameera ☁️","ምትኬ ናብ ደመና ተላኢኹ ☁️"],"ምንም አልተመዘገበም":["Nothing recorded","Homtu hin galmaa'in","ዋላ ሓንቲ ኣይተመዝገበትን"],"ርዕስ ያስፈልጋል":["Title is required","Mata-dureen ni barbaachisa","ኣርእስቲ የድሊ"],"ርዕስና ይዘት ያስፈልጋሉ":["Title and content are required","Mata-duree fi qabiyyeen ni barbaachisu","ኣርእስትን ትሕዝቶን የድልዩ"],"ሰርዝ":["Delete","Haqi","ሰርዝ"],"ሰነዱ ተጨምሯል! 📜":["Document added! 📜","Sanadni dabalameera! 📜","ሰነድ ተወሲኹ! 📜"],"ሰነዱን ማጥፋት ይፈልጋሉ?":["Do you want to delete the document?","Sanada kana haquu barbaaddaa?","ነዚ ሰነድ ክትድምስስዎ ትደልዩ ዲኹም?"],"ሰው እና መጠን ያስገቡ":["Enter a person and an amount","Nama fi hanga galchi","ሰብን መጠንን የእትዉ"],"ሰዓትና ርዕስ ያስፈልጋሉ":["Time and title are required","Sa'aatii fi mata-dureen ni barbaachisu","ሰዓትን ኣርእስትን የድልዩ"],"ስህተት":["Error","Dogoggora","ጌጋ"],"ስልክ ያስፈልጋል":["Phone is required","Bilbilli ni barbaachisa","ተሌፎን የድሊ"],"ስም ያስፈልጋል":["Name is required","Maqaan ni barbaachisa","ስም የድሊ"],"ስምና መልስ ያስፈልጋል":["Name and reply are required","Maqaa fi deebiin ni barbaachisu","ስምን መልስን የድልዩ"],"ስምና መልእክት ያስፈልጋሉ":["Name and message are required","Maqaa fi ergaan ni barbaachisu","ስምን መልእኽትን የድልዩ"],"ቀን ይምረጡ":["Choose a date","Guyyaa filadhu","ዕለት ምረጹ"],"በሊንክ ወይም በኮድ ግባ":["Sign in with a link or code","Liinkii yookaan koodiidhaan seeni","ብሊንክ ወይ ብኮድ እተዉ"],"በአመታት ማትሪክስ":["Matrix by year","Maatriksii waggaan","ማትሪክስ ብዓመታት"],"በዚህ መሣሪያ ያለው ውሂብ በደመናው ምትኬ ይተካል። ይቀጥሉ?":["Data on this device will be replaced by the cloud backup. Continue?","Daataan meeshaa kana irra jiru baackaappii duumessaatiin bakka bu'a. Itti fufuu?","ኣብዚ መሳርሒ ዘሎ ዳታ ብናይ ደመና ምትኬ ክትክእ እዩ። ክትቅጽሉ ትደልዩ ዲኹም?"],"በደመና ላይ ምትኬ የለም":["No backup in the cloud","Duumessa irratti baackaappiin hin jiru","ኣብ ደመና ምትኬ የለን"],"በደመና ምትኬ የለም":["No cloud backup","Baackaappiin duumessaa hin jiru","ናይ ደመና ምትኬ የለን"],"በደመናው ላይ ምንም ምትኬ የለም":["There is no backup in the cloud","Duumessa irratti baackaappiin tokkollee hin jiru","ኣብ ደመና ዋላ ሓደ ምትኬ የለን"],"ተለጠፈ! ✅":["Posted! ✅","Maxxanfameera! ✅","ተለጢፉ! ✅"],"ተመዝግቧል ✅":["Recorded ✅","Galmaa'eera ✅","ተመዝጊቡ ✅"],"ተማሪ አልተገኘም":["Student not found","Barataan hin argamne","ተማሃራይ ኣይተረኽበን"],"ተማሪ የለም":["No student","Barataan hin jiru","ተማሃራይ የለን"],"ተማሪው ጠፍቷል":["The student is missing","Barataan hin jiru","እቲ ተማሃራይ ጠፊኡ"],"ተስተካክሏል! ✅":["Updated! ✅","Sirraa'eera! ✅","ተመሓይሹ! ✅"],"ተቀምጧል ✅":["Saved ✅","Olkaa'ameera ✅","ተቐሚጡ ✅"],"ተቀድቷል":["Copied","Waraabameera","ተቐዲሑ"],"ተቋም":["Institution","Dhaabbata","ትካል"],"ተካ":["Replace","Bakka buusi","ተክእ"],"ተግባሩ ተጨምሯል! 📂":["Task added! 📂","Hojiin dabalameera! 📂","ተግባር ተወሲኹ! 📂"],"ተግባሩን ማጥፋት ይፈልጋሉ?":["Do you want to delete the task?","Hojii kana haquu barbaaddaa?","ነዚ ተግባር ክትድምስስዎ ትደልዩ ዲኹም?"],"ትምህርቱ ተጨምሯል! 🎧":["Lesson added! 🎧","Barnoonni dabalameera! 🎧","ትምህርቲ ተወሲኹ! 🎧"],"ትምህርት":["Lesson","Barnoota","ትምህርቲ"],"ኃላፊዎች":["Leaders","Itti-gaafatamtoota","ሓለፍቲ"],"ነጥብ ከ0-100 መሆን አለበት":["Score must be 0–100","Qabxiin 0–100 ta'uu qaba","ነጥቢ ካብ 0-100 ክኸውን ኣለዎ"],"አሁን":["Now","Amma","ሕጂ"],"አልተሳካም":["Failed","Hin milkoofne","ኣይተዓወተን"],"አመት (ዓ.ም)":["Year (E.C.)","Waggaa (G.L.)","ዓመት (ዓ.ም)"],"አስተያየትዎ ተልኳል! 🔄":["Your feedback was sent! 🔄","Yaadni keessan ergameera! 🔄","ርእይቶኹም ተላኢኹ! 🔄"],"አባሉ ተመዝግቧል! ✅":["Member registered! ✅","Miseensi galmaa'eera! ✅","ኣባል ተመዝጊቡ! ✅"],"አባሉ ጠፍቷል":["The member is missing","Miseensi hin jiru","እቲ ኣባል ጠፊኡ"],"አቴንዳንሱን ማጥፋት ይፈልጋሉ?":["Do you want to delete this attendance?","Hirmaannaa kana haquu barbaaddaa?","ነዚ ምርካብ ክትድምስስዎ ትደልዩ ዲኹም?"],"አቴንዳንሶች":["Attendance records","Hirmaannaawwan","ምርካባት"],"እርግጠኛ ነዎት? ሁሉም ተማሪዎች፣ መምህራን፣ ውጤቶች ይጠፋሉ።":["Are you sure? All students, teachers and results will be deleted.","Mirkaneeffattaa? Barattoonni, barsiisonni fi bu'aaleen hundi ni haqamu.","ርግጸኛ ዲኹም? ኩሎም ተማሃሮ፣ መምህራንን ውጽኢታትን ይጠፍኡ።"],"እንደገና ክፈት":["Reopen","Irra deebi'ii bani","ከም ሓድሽ ክፈት"],"እየተፈተሸ ነው…":["Checking…","Ilaalamaa jira…","ይፍተሽ ኣሎ…"],"ኦዲት":["Audit","Odiitii","ኦዲት"],"ክፍሉ ተጨምሯል! ✅":["Section added! ✅","Kutaan dabalameera! ✅","ክፍሊ ተወሲኹ! ✅"],"ክፍል ያልተመደቡ":["Not assigned to a class","Kutaa hin ramadamne","ክፍሊ ዘይተመደቡ"],"ኮድና ቢያንስ 4 ፊደል/ቁጥር PIN ያስገቡ":["Enter the code and a PIN of at least 4 letters/digits","Koodii fi PIN yoo xiqqaate arfii/lakkoofsa 4 galchi","ኮድን እንተ ወሓደ 4 ፊደል/ቁጽሪ PIN ኣእትዉ"],"ውሂብ ተመልሷል! ገጹን ያድሱ":["Data restored! Refresh the page","Daataan deebi'eera! Fuula haaromsaa","ዳታ ተመሊሱ! ገጹ ኣሐድሱ"],"ውይይቱ ተጀምሯል! 🗣️":["Discussion started! 🗣️","Mariin eegalameera! 🗣️","ዘተ ተጀሚሩ! 🗣️"],"ውይይቶች":["Discussions","Mariiwwan","ዘተታት"],"ውጤቱ ተመዝግቧል! 📊":["Result recorded! 📊","Bu'aan galmaa'eera! 📊","ውጽኢት ተመዝጊቡ! 📊"],"ውጤቶች":["Results","Bu'aalee","ውጽኢታት"],"ዝጋ":["Close","Cufi","ዕጸው"],"የስብሰባ ሊንክ፦":["Meeting link:","Liinkii walga'ii:","ሊንክ ጉባኤ፦"],"የስክሪፕት አድራሻ በ /exec መጨረስ አለበት":["The script address must end with /exec","Teessoon iskiriiptii /exec'n xumuramuu qaba","ኣድራሻ ስክሪፕት ብ /exec ክውዳእ ኣለዎ"],"የስክሪፕት አድራሻ አልተሞላም":["Script address is not filled in","Teessoon iskiriiptii hin guutamne","ኣድራሻ ስክሪፕት ኣይተመልአን"],"የተሰበሰበ (ብር)":["Collected (Birr)","Walitti qabame (Birrii)","ዝተኣከበ (ብር)"],"የተሳሳተ ፋይል":["Wrong file","Faayilii dogoggoraa","ጌጋ ፋይል"],"የትምህርት ደረጃ ይምረጡ":["Select an education level","Sadarkaa barnootaa filadhu","ደረጃ ትምህርቲ ምረጹ"],"የአባላት መግቢያ ተዘምኗል 🌐":["Member login updated 🌐","Seensi miseensotaa haaromfameera 🌐","መእተዊ ኣባላት ተሓዲሱ 🌐"],"የአባል ኮድ ያስገቡ":["Enter the member code","Koodii miseensaa galchi","ኮድ ኣባል የእትዉ"],"የከፈሉት":["Paid","Warra kaffalan","ዝኸፈሉ"],"የክፍሉ ስም ያስፈልጋል":["Section name is required","Maqaan kutaa ni barbaachisa","ስም ክፍሊ የድሊ"],"የዛሬ ስንክሳር / ግጻዌ":["Today's Synaxarium / Readings","Sinkisaar / Gixaawee har'aa","ናይ ሎሚ ስንክሳር / ግጻዌ"],"የጊዜ ሰሌዳ ተጨምሯል! 📋":["Schedule added! 📋","Sagantaan dabalameera! 📋","ናይ ግዜ መስርሕ ተወሲኹ! 📋"],"የግቢ ጉባኤው ስም":["Gibi Gubae name","Maqaa Gibii Gubaa'ee","ስም ጉባኤ ግቢ"],"የግቢ ጉባኤው ስም ከተመዘገበው ጋር አይመሳሰልም":["The Gibi Gubae name does not match the registered one","Maqaan Gibii Gubaa'ee kan galmaa'e waliin wal hin simu","ስም ጉባኤ ግቢ ምስ ዝተመዝገበ ኣይመሳሰልን"],"ያልተመደቡ":["Unassigned","Warra hin ramadamne","ዘይተመደቡ"],"ያልተገለጸ":["Unspecified","Hin ibsamne","ዘይተገልጸ"],"ይህ መጽሐፍ ይሰረዝ?":["Delete this book?","Kitaabni kun haqamu?","እዚ መጽሓፍ ይሰረዝ ዶ?"],"ይህ ክፍያ ይሰረዝ?":["Delete this payment?","Kaffaltiin kun haqamu?","እዚ ክፍሊት ይሰረዝ ዶ?"],"ይህን ተማሪ ማጥፋት ይፈልጋሉ?":["Do you want to delete this student?","Barataa kana haquu barbaaddaa?","ነዚ ተማሃራይ ክትድምስስዎ ትደልዩ ዲኹም?"],"ይህን አባል ማጥፋት ይፈልጋሉ?":["Do you want to delete this member?","Miseensa kana haquu barbaaddaa?","ነዚ ኣባል ክትድምስስዎ ትደልዩ ዲኹም?"],"ገና የተመዘገበ ክፍያ የለም።":["No payment recorded yet.","Ammallee kaffaltiin galmaa'e hin jiru.","ገና ዝተመዝገበ ክፍሊት የለን።"],"ግቢ ጉባኤ":["Gibi Gubae","Gibii Gubaa'ee","ጉባኤ ግቢ"],"ግባ":["Sign in","Seeni","እተው"],"ግንኙነት ተሳክቷል":["Connection successful","Walqunnamtiin milkaa'eera","ርክብ ተዓዊቱ"],"ግንኙነት አልተሳካም":["Connection failed","Walqunnamtiin hin milkoofne","ርክብ ኣይተዓወተን"],"ጠቅላላ":["Total","Waliigala","ጠቕላላ"],"ጠቅላላ አባላት":["Total members","Miseensota waliigala","ጠቕላላ ኣባላት"],"ጠፍቷል":["Missing","Dhabameera","ጠፊኡ"],"ጫን":["Load","Fe'i","ጽዓን"],"ጾታ ይምረጡ":["Select gender","Saala filadhu","ጾታ ምረጹ"],"ፋይሉ የተሳሳተ ነው":["The file is invalid","Faayiliin kun dogoggora","እቲ ፋይል ጌጋ እዩ"],"ስብሰባ ጀምር":["Start meeting","Walga'ii eegali","ጉባኤ ጀምር"],"መልስ":["Reply","Deebii","መልሲ"],"ተጨማሪ — የስክሪፕት አድራሻ (በራሱ ከተሞላ አይንኩት)":["More — script address (do not touch if filled automatically)","Dabalataa — teessoo iskiriiptii (yoo ofumaan guutame hin tuqiin)","ተወሳኺ — ኣድራሻ ስክሪፕት (ባዕሉ እንተ ተመልኢዩ ኣይትንከፍዎ)"],"ምትኬ ተልኳል":["Backup sent","Baackaappiin ergameera","ምትኬ ተላኢኹ"],"ስብሰባው ተከፍቷል":["Meeting opened","Walga'iin banameera","ጉባኤ ተኸፊቱ"],"ተገኝቷል":["Present","Argameera","ተረኺቡ"],"ከፍሏል · 🟡 በከፊል · ❌ አልከፈለም":["Paid · 🟡 Partial · ❌ Not paid","Kaffalee · 🟡 Gartokkee · ❌ Hin kaffalle","ከፊሉ · 🟡 ብኸፊል · ❌ ኣይከፈለን"],"የከፈሉ":["Paid","Warra kaffalan","ዝኸፈሉ"],"ግንኙነቱ ትክክል ነው":["The connection is correct","Walqunnamtiin sirrii dha","እቲ ርክብ ቅኑዕ እዩ"],"ተማሪ አርትዕ":["Edit student","Barataa gulaali","ተማሃራይ ኣርትዕ"],"ADMIN_KEY ያስገቡ":["Enter ADMIN_KEY","ADMIN_KEY galchi","ADMIN_KEY የእትዉ"],"ያልከፈሉ":["Not paid","Warra hin kaffalle","ዘይኸፈሉ"],"ይህ መተግበሪያ ከግቢ ጉባኤው ስክሪፕት ጋር ገና አልተገናኘም — የአስተዳዳሪው የላከውን የመተግበሪያ ሊንክ ይክፈቱ ወይም አድራሻውን ከታች ይሙሉ።":["This app is not yet connected to the Gibi Gubae script — open the app link sent by the administrator or fill in the address below.","Appiin kun iskiriiptii Gibii Gubaa'ee waliin ammallee hin wal-qunnamne — liinkii appii bulchaan erge banaa yookaan teessoo gadii guutaa.","እዚ ኣፕ ምስ ስክሪፕት ጉባኤ ግቢ ገና ኣይተኣሳሰረን — ኣመሓዳሪ ዝሰደዶ ሊንክ ኣፕ ክፈቱ ወይ ኣድራሻ ኣብ ታሕቲ መልኡ።"],"ግንኙነት አልተሳካም:":["Connection failed:","Walqunnamtiin hin milkoofne:","ርክብ ኣይተዓወተን:"],"ቪዲዮ እና ድምፅ":["Video and audio","Viidiyoo fi sagalee","ቪድዮን ድምጽን"],"ድምፅ ብቻ (ስልክ ኮንፈረንስ — ዳታ ይቆጥባል)":["Audio only (phone conference — saves data)","Sagalee qofa (konfaransii bilbilaa — daataa qusata)","ድምጺ ጥራይ (ተሌፎን ኮንፈረንስ — ዳታ የዕቅብ)"],"በምዝገባ ኮድ ግባ":["Sign in with registration code","Koodii galmeessaatiin seeni","ብኮድ ምዝገባ እተው"],"የተማሪ ዝርዝር":["Student list","Tarree barattootaa","ዝርዝር ተማሃሮ"],"ንቁ ተግባራት":["Active tasks","Hojiiwwan hojjetamaa jiran","ንጡፋት ተግባራት"],"የአቴንዳንስ መዝገቦች":["Attendance records","Galmeewwan hirmaannaa","መዛግብቲ ምርካብ"],"የእርስዎ ውጤት":["Your results","Bu'aa keessan","ውጽኢትኩም"],"ሊንክ ቅዳ":["Copy link","Liinkii waraabi","ሊንክ ቅዳሕ"],"የተመዘገቡ ተማሪዎች":["Registered students","Barattoota galmaa'an","ዝተመዝገቡ ተማሃሮ"],"ማስታወቂያዎች":["Announcements","Beeksisoota","መግለጺታት"],"ቀድሞ የነበረ መረጃ መልስ":["Restore earlier data","Odeeffannoo duraan ture deebisi","ድሕሪ ቀደም ዝነበረ ሓበሬታ መልስ"],"አትም / PDF":["Print / PDF","Maxxansi / PDF","ሓትም / PDF"],"በከፊል":["Partial","Gartokkee","ብኸፊል"],"የተማሪ መታወቂያ":["Student ID","Eenyummaa barataa","መንነት ተማሃራይ"],"ጥቅምት":["Tikimt","Onkololeessa","ጥቅምቲ"],"ሐምሌ":["Hamle","Adoolessa","ሓምለ"],"መስከረም":["Meskerem","Fuulbana","መስከረም"],"ሚያዝያ":["Miazia","Ebla","ሚያዝያ"],"መጋቢት":["Megabit","Bitootessa","መጋቢት"],"ሰኔ":["Sene","Waxabajjii","ሰነ"],"ታኅሳስ":["Tahsas","Muddee","ታሕሳስ"],"ኅዳር":["Hidar","Sadaasa","ሕዳር"],"ነሐሴ":["Nehase","Hagayya","ነሓሰ"],"የካቲት":["Yekatit","Guraandhala","የካቲት"],"ግንቦት":["Ginbot","Caamsaa","ግንቦት"],"ጥር":["Tir","Amajjii","ጥሪ"],"ጳጉሜ":["Pagume","Pagumee","ጳጕሜን"],"ዛሬ፦":["Today:","Har'a:","ሎሚ፦"],"ዛሬ":["Today","Har'a","ሎሚ"],"ውጤት":["Result","Bu'aa","ውጽኢት"],"የተሰረዘ":["deleted","haqame","ተሰሪዙ"],"ሀሳብ ያስፈልጋል":["An idea is required","Yaadni ni barbaachisa","ሓሳብ የድሊ"],"ሁሉም መስኮች ያስፈልጋሉ":["All fields are required","Dirreewwan hundi ni barbaachisu","ኩሎም መሳኽዕታት የድልዩ"],"ሁሉም መጻሕፍት":["All books","Kitaabota hunda","ኩሎም መጻሕፍቲ"],"ሁሉም ክፍላት":["All sections","Kutaalee hunda","ኩሎም ክፍልታት"],"ሁሉንም ውሂብ ማጥፋት ይፈልጋሉ? ይህ ተግባር መመለስ አይቻልም!":["Delete all data? This cannot be undone!","Daataa hunda haquu barbaaddaa? Hojiin kun deebi'uu hin danda'u!","ኩሉ ዳታ ክትድምስስዎ ትደልዩ ዲኹም? እዚ ተግባር ክምለስ ኣይከኣልን!"],"ሁኔታ ይምረጡ":["Select a status","Haala filadhu","ኩነታት ምረጹ"],"ሊንኩ ተቀድቷል — ለአባላት ይላኩ (ሚስጥሩን አያካትትም)":["Link copied — send it to members (it does not include the secret)","Liinkiin waraabameera — miseensotaaf ergaa (icciitii hin of keessaa qabu)","ሊንክ ተቐዲሑ — ንኣባላት ስደዱ (ምስጢር ኣይሓዘን)"],"ሊንኩን ይቅዱ":["Copy the link","Liinkii waraabaa","ሊንክ ቅዱ"],"ልክ ያልሆነ ሊንክ ወይም ኮድ":["Invalid link or code","Liinkii yookaan koodii dogoggora","ጌጋ ሊንክ ወይ ኮድ"],"መልሶ ማግኘት አልተሳካም":["Restore failed","Deebisuun hin milkoofne","ምምላስ ኣይተዓወተን"],"መልእክቱን ማጥፋት ይፈልጋሉ?":["Do you want to delete the message?","Ergaa kana haquu barbaaddaa?","ነዚ መልእኽቲ ክትድምስስዎ ትደልዩ ዲኹም?"],"መልእክት ተልኳል! ✉️":["Message sent! ✉️","Ergaan ergameera! ✉️","መልእኽቲ ተላኢኹ! ✉️"],"መልእክት የለም።":["No messages.","Ergaan hin jiru.","መልእኽቲ የለን።"],"መምህሩ ተመዝግቧል!":["Teacher registered!","Barsiisaan galmaa'eera!","መምህር ተመዝጊቡ!"],"መምህሩ ጠፍቷል":["The teacher is missing","Barsiisaan hin jiru","እቲ መምህር ጠፊኡ"],"መምህር አልተመዘገበም።":["No teacher registered.","Barsiisaan hin galmoofne.","መምህር ኣይተመዝገበን።"],"መታወቂያዎች ተፈጥረዋል":["IDs created","Eenyummaawwan uumamaniiru","መንነታት ተፈጢሮም"],"መንፈሳዊ መመሪያና የትምህርት ይዘት ማጽደቅ":["Approving spiritual guidance and lesson content","Qajeelfama hafuuraa fi qabiyyee barnootaa mirkaneessuu","መንፈሳዊ መምርሒን ትሕዝቶ ትምህርትን ምጽዳቕ"],"ሚዲያ የለም።":["No media.","Miidiyaan hin jiru.","ሚድያ የለን።"],"ማስታወሻ፦ ነጻው የJitsi አገልግሎት አንዳንድ ጊዜ ስብሰባውን የሚጀምረውን ሰው በGoogle መለያ እንዲገባ ሊጠይቅ ይችላል — ያኔ «Google Meet ክፈት»ን ይጠቀሙ። የክፍሉን ሊንክ ለተፈቀደላቸው ብቻ ይስጡ።":["Note: the free Jitsi service may sometimes ask the person starting the meeting to sign in with a Google account — then use \"Open Google Meet\". Give the room link only to authorised people.","Yaadachiisa: tajaajilli bilisaa Jitsi yeroo tokko tokko nama walga'ii eegalu akkaawuntii Google'n akka seenu gaafachuu danda'a — yeroo sanatti «Google Meet bani» fayyadamaa. Liinkii kutaa warra eeyyamameef qofa kennaa.","መዘኻኸሪ፦ ናጻ ኣገልግሎት Jitsi ሓድ ሓድ ግዜ ነቲ ጉባኤ ዘጅምር ሰብ ብGoogle ኣካውንት ክኣቱ ክሓትት ይኽእል — ሽዑ «Google Meet ክፈት» ተጠቐሙ። ሊንክ ክፍሊ ንዝተፈቐደሎም ጥራይ ሃቡ።"],"ማስታወቂያ የለም":["No announcement","Beeksisni hin jiru","መግለጺ የለን"],"ማስታወቂያ የለም።":["No announcements.","Beeksisni hin jiru.","መግለጺ የለን።"],"ምንም ሀሳብ አልተለጠፈም።":["No ideas posted.","Yaadni tokkollee hin maxxanfamne.","ዋላ ሓንቲ ሓሳብ ኣይተለጠፈትን።"],"ምንም ተማሪ አልተገኘም።":["No student found.","Barataan tokkollee hin argamne.","ዋላ ሓደ ተማሃራይ ኣይተረኽበን።"],"ምንም አልተገኘም።":["Nothing found.","Homtu hin argamne.","ዋላ ሓንቲ ኣይተረኸበትን።"],"ምንም አባል አልተገኘም።":["No member found.","Miseensi tokkollee hin argamne.","ዋላ ሓደ ኣባል ኣይተረኽበን።"],"ሰነድ የለም።":["No documents.","Sanadni hin jiru.","ሰነድ የለን።"],"ሰው":["Person","Nama","ሰብ"],"ሰዎች ለመግቢያ ተዘጋጅተዋል":["people are set up for login","namoonni seensaaf qophaa'aniiru","ሰባት ንመእተዊ ተዳልዮም"],"ሰዎች አልተመዘገቡም።":["No people registered.","Namoonni hin galmoofne.","ሰባት ኣይተመዝገቡን።"],"ስም-አልባ":["Anonymous","Maqaa malee","ስም ዘይብሉ"],"ስብሰባ፣ ቃለ ጉባኤ፣ ሪፖርት":["Meeting, minutes, report","Walga'ii, ye'umsa, gabaasa","ጉባኤ፣ ቃለ ጉባኤ፣ ሪፖርት"],"ስንክሳር":["Synaxarium","Sinkisaar","ስንክሳር"],"ቀድሞ የነበረውን መረጃ ይመልሱ።":["Restore the earlier data.","Odeeffannoo duraan ture deebisaa.","ቀደም ዝነበረ ሓበሬታ መልሱ።"],"በጀት፣ ደረሰኝ፣ የንብረት መዝገብ":["Budget, receipts, asset register","Baajata, ragaa kaffaltii, galmee qabeenyaa","በጀት፣ ደረሰኝ፣ መዝገብ ንብረት"],"በግቢ ጉባኤው ውስጥ ያለውን አገልግሎት ለማረጋገጥ ነው።":["This is to confirm service within the Gibi Gubae.","Kun tajaajila Gibii Gubaa'ee keessa jiru mirkaneessuufi.","እዚ ኣገልግሎት ኣብ ውሽጢ ጉባኤ ግቢ ንምርግጋጽ እዩ።"],"ብር":["Birr","Birrii","ብር"],"ተመዝግቧል!":["Registered!","Galmaa'eera!","ተመዝጊቡ!"],"ተማሪ አልተመዘገበም":["No student registered","Barataan hin galmoofne","ተማሃራይ ኣይተመዝገበን"],"ተማሪ አልተመደበም።":["No student assigned.","Barataan hin ramadamne.","ተማሃራይ ኣይተመደበን።"],"ተወው":["Cancel","Dhiisi","ሕደግ"],"ተገኝተዋል ✅":["Present ✅","Argamaniiru ✅","ተረኺቦም ✅"],"ተግባር የለም።":["No tasks.","Hojiin hin jiru.","ተግባር የለን።"],"ተጭኗል፦":["Loaded:","Fe'ameera:","ተጻዒኑ፦"],"ትምህርትና አገልግሎት ቡድን":["Education & Service team","Garee Barnootaa fi Tajaajilaa","ጉጅለ ትምህርትን ኣገልግሎትን"],"ኃላፊ ፈርማ":["Head's signature","Mallattoo itti-gaafatamaa","ፊርማ ሓላፊ"],"አሁን አይደለም":["Not now","Amma miti","ሕጂ ኣይኮነን"],"አመራር ኮሚቴ":["Leadership committee","Koree Geggeessaa","ኮሚቴ መሪሕነት"],"አስተያየት የለም።":["No feedback.","Yaadni hin jiru.","ርእይቶ የለን።"],"አባላትና በጎ ፈቃድ":["Members & Volunteers","Miseensotaa fi Of-kennitoota","ኣባላትን ወለንተኛታትን"],"አቴንዳንስ አልተመዘገበም።":["No attendance recorded.","Hirmaannaan hin galmaa'in.","ምርካብ ኣይተመዝገበን።"],"አዲስ ስልክ ወይም ኮምፒውተር ነው?":["Is this a new phone or computer?","Kun bilbila yookaan kompiitaraa haaraa?","እዚ ሓዲሽ ተሌፎን ወይ ኮምፒተር ድዩ?"],"እስካሁን ማስታወቂያ የለም።":["No announcements yet.","Hanga ammaatti beeksisni hin jiru.","ክሳዕ ሕጂ መግለጺ የለን።"],"እስካሁን የተመዘገበ ተማሪ የለም።":["No student registered yet.","Hanga ammaatti barataan galmaa'e hin jiru.","ክሳዕ ሕጂ ዝተመዝገበ ተማሃራይ የለን።"],"እንኳን ደህና መጡ —":["Welcome —","Baga nagaan dhuftan —","ብደሓን መጻእኩም —"],"ውይይት የለም።":["No discussions.","Mariin hin jiru.","ዘተ የለን።"],"ውጤት የለም":["No results","Bu'aan hin jiru","ውጽኢት የለን"],"ውጤት የለም።":["No results.","Bu'aan hin jiru.","ውጽኢት የለን።"],"ዓ.ም":["E.C.","G.L.","ዓ.ም"],"ዕቅድና አስተዳደር ቡድን":["Planning & Administration team","Garee Karoora fi Bulchiinsaa","ጉጅለ መደባን ምሕደራን"],"የምዝገባ ኮድ (ለምሳሌ GG-0001)":["Registration code (e.g. GG-0001)","Koodii galmeessaa (fakkeenyaaf GG-0001)","ኮድ ምዝገባ (ንኣብነት GG-0001)"],"የስብሰባ ርዕስ (ለአስታዋሽ)":["Meeting title (as a reminder)","Mata-duree walga'ii (yaadachiisaaf)","ኣርእስቲ ጉባኤ (ንመዘኻኸሪ)"],"የተጫኑ መጻሕፍት":["Loaded books","Kitaabota fe'aman","ዝተጻዕኑ መጻሕፍቲ"],"የትምህርት እቅድ፣ መምህራንና ክፍል ማስተባበር":["Lesson planning, teachers and class coordination","Karoora barnootaa, barsiisotaa fi kutaa walitti hidhuu","መደብ ትምህርቲ፣ መምህራንን ክፍልታትን ምውህሃድ"],"የአሁኑ መረጃ ከመተካቱ በፊት በራሱ ተቀምጦ ይቆያል።":["The current data is saved automatically before it is replaced.","Daataan yeroo ammaa osoo hin bakka bu'in dura ofumaan olkaa'ama.","ናይ ሕጂ ሓበሬታ ቅድሚ ምትካእ ባዕሉ ተቐሚጡ ይጸንሕ።"],"የአመቱ የአባል መዋጮ (ብር፣ አማራጭ)":["Annual member contribution (Birr, optional)","Gumaacha miseensaa waggaa (Birrii, filannoo)","ዓመታዊ መዋጮ ኣባል (ብር፣ ምርጫ)"],"የአባላት ተሳትፎ፣ ክስተት አደረጃጀት":["Member participation and event organisation","Hirmaannaa miseensotaa fi qindoomina taateewwanii","ተሳትፎ ኣባላትን ኣወዳድባ ኩነትን"],"የአንድ አመት ኦዲት":["One-year audit","Odiitii waggaa tokkoo","ናይ ሓደ ዓመት ኦዲት"],"የግቢ ጉባኤ ትምህርት ክፍል":["Gibi Gubae Education section","Kutaa Barnootaa Gibii Gubaa'ee","ክፍሊ ትምህርቲ ጉባኤ ግቢ"],"የግቢ ጉባኤ — የመዋጮ ኦዲት":["Gibi Gubae — Contribution audit","Gibii Gubaa'ee — Odiitii Gumaachaa","ጉባኤ ግቢ — ኦዲት መዋጮ"],"የፋይል አሠራር":["File format","Bifa faayilaa","ኣሰራርሓ ፋይል"],"ይህ ሰነድ የተሰጠው ለ":["This document is issued to","Sanadni kun kan kenname","እዚ ሰነድ ዝተዋህበ ን"],"ገና ምንም መጽሐፍ አልተጫነም — ከታች «ጫን» ይጠቀሙ።":["No book loaded yet — use \"Load\" below.","Ammallee kitaabni tokko illee hin fe'amne — «Fe'i» gadii fayyadamaa.","ገና ዋላ ሓደ መጽሓፍ ኣይተጻዕነን — ኣብ ታሕቲ «ጽዓን» ተጠቐሙ።"],"ገና በቂ መረጃ የለም።":["Not enough data yet.","Ammallee odeeffannoon gahaa hin jiru.","ገና ዝኣክል ሓበሬታ የለን።"],"ገንዘብና ንብረት":["Finance & Property","Maallaqaa fi Qabeenya","ገንዘብን ንብረትን"],"ጊዜ ሰሌዳ የለም።":["No schedule.","Sagantaan hin jiru.","ናይ ግዜ መስርሕ የለን።"],"ግጻዌ (የአመቱ ንባባት)":["Readings (annual lectionary)","Gixaawee (dubbisa waggaa)","ግጻዌ (ናይ ዓመት ንባባት)"],"ፋይሉ አልተነበበም — አሠራሩን ያረጋግጡ":["The file could not be read — check the format","Faayiliin hin dubbifamne — bifa isaa mirkaneessaa","እቲ ፋይል ኣይተነብበን — ኣሰራርሓኡ ኣረጋግጹ"],"የተመዘገበበት:":["Registered on:","Kan itti galmaa'e:","ዝተመዝገበሉ:"],"ጠቅላላ:":["Total:","Waliigala:","ጠቕላላ:"],"ምትኬ ተልኳል —":["Backup sent —","Baackaappiin ergameera —","ምትኬ ተላኢኹ —"],"አረጋግጥ":["Verify","Mirkaneessi","ኣረጋግጽ"],"ዓ.ም ክፍያዎች (":["E.C. payments (","G.L. kaffaltiiwwan (","ዓ.ም ክፍሊታት ("],"ቋንቋ":["Language","Afaan","ቋንቋ"],"ቋንቋ ይምረጡ":["Choose a language","Afaan filadhu","ቋንቋ ምረጹ"],"ሊንክ አስገባ":["Enter link","Liinkii galchi","ሊንክ የእትዉ"],"የስክሪፕት ሊንክ":["Script link","Liinkii iskiriiptii","ሊንክ ስክሪፕት"],"የስክሪፕት ሊንክ እዚህ ያስገቡ":["Enter the script link here","Liinkii iskiriiptii as galchaa","ሊንክ ስክሪፕት ኣብዚ የእትዉ"],"ተቀምጧል — ግንኙነት ተፈትሿል":["Saved — connection checked","Olkaa'ameera — walqunnamtiin ilaalameera","ተቐሚጡ — ርክብ ተፈቲሹ"],"# ደቂቃ በፊት":["# minutes ago","daqiiqaa # dura","ቅድሚ # ደቒቕ"],"# ሰዓት በፊት":["# hours ago","sa'aatii # dura","ቅድሚ # ሰዓት"],"# ቀን በፊት":["# days ago","guyyaa # dura","ቅድሚ # መዓልቲ"],"ለምሳሌ፦ የትምህርት ክፍል":["e.g. Education section","Fkn: Kutaa Barnootaa","ንኣብነት፦ ክፍሊ ትምህርቲ"],"የኃላፊ ስም":["Head's name","Maqaa itti-gaafatamaa","ስም ሓላፊ"],"የክፍሉ ተግባር...":["Section duty...","Hojii kutaa...","ተግባር ክፍሊ..."],"ስም ይፃፉ...":["Write a name...","Maqaa barreessi...","ስም ጽሓፉ..."],"አካባቢ / ከተማ":["Area / city","Naannoo / magaalaa","ከባቢ / ከተማ"],"ስም/ስልክ":["Name/phone","Maqaa/bilbila","ስም/ተሌፎን"],"አካባቢ / ከተማ / ሀገር":["Area / city / country","Naannoo / magaalaa / biyya","ከባቢ / ከተማ / ሃገር"],"ለምሳሌ፦ AAU":["e.g. AAU","Fkn: AAU","ንኣብነት፦ AAU"],"ለምሳሌ፦ ምህንድስና":["e.g. Engineering","Fkn: Ijaarsa","ንኣብነት፦ ኢንጂነሪንግ"],"ተጨማሪ መረጃ...":["More information...","Odeeffannoo dabalataa...","ተወሳኺ ሓበሬታ..."],"ስም/መታወቂያ/ስልክ":["Name/ID/phone","Maqaa/eenyummaa/bilbila","ስም/መንነት/ተሌፎን"],"መምህር ሙሉ ስም":["Teacher's full name","Maqaa guutuu barsiisaa","ምሉእ ስም መምህር"],"ለምሳሌ፦ መሠረታዊ፣ ከፍተኛ":["e.g. Basic, Advanced","Fkn: Bu'uuraa, Ol'aanaa","ንኣብነት፦ መሰረታዊ፣ ላዕለዋይ"],"ለምሳሌ፦ የግቢ ጉባኤ ደንብ":["e.g. Gibi Gubae rules","Fkn: Seera Gibii Gubaa'ee","ንኣብነት፦ ደንቢ ጉባኤ ግቢ"],"የሰነዱ ይዘት...":["Document content...","Qabiyyee sanadaa...","ትሕዝቶ ሰነድ..."],"የመምህሩ ስም":["Teacher's name","Maqaa barsiisaa","ስም መምህር"],"ስለ ትምህርቱ...":["About the lesson...","Waa'ee barnootaa...","ብዛዕባ ትምህርቲ..."],"ለምሳሌ፦ 09:00 - 10:30":["e.g. 09:00 - 10:30","Fkn: 09:00 - 10:30","ንኣብነት፦ 09:00 - 10:30"],"ተማሪ ስም":["Student name","Maqaa barataa","ስም ተማሃራይ"],"ስምዎ":["Your name","Maqaa keessan","ስምኩም"],"ሀሳብዎን ይጻፉ...":["Write your idea...","Yaada keessan barreessaa...","ሓሳብኩም ጽሓፉ..."],"የማስታወቂያው ርዕስ":["Announcement title","Mata-duree beeksisaa","ኣርእስቲ መግለጺ"],"የማስታወቂያው ይዘት...":["Announcement content...","Qabiyyee beeksisaa...","ትሕዝቶ መግለጺ..."],"የላኪው ስም":["Sender's name","Maqaa ergitaa","ስም ሰዳዲ"],"የተቀባዩ ስም":["Recipient's name","Maqaa fudhatichaa","ስም ተቐባሊ"],"መልእክትዎን ይጻፉ...":["Write your message...","Ergaa keessan barreessaa...","መልእኽትኹም ጽሓፉ..."],"የተግባሩ ዝርዝር...":["Task details...","Ibsa hojii...","ዝርዝር ተግባር..."],"አስተያየትዎን ይጻፉ...":["Write your feedback...","Yaada keessan barreessaa...","ርእይቶኹም ጽሓፉ..."],"የውይይቱ ርዕስ":["Discussion title","Mata-duree mari'ichaa","ኣርእስቲ ዘተ"],"ሀሳብዎን ያካፍሉ...":["Share your idea...","Yaada keessan qoodaa...","ሓሳብኩም ኣካፍሉ..."],"ለምሳሌ፦ የ… ዩኒቨርሲቲ ግቢ ጉባኤ":["e.g. … University Gibi Gubae","Fkn: Gibii Gubaa'ee Yuunivarsiitii …","ንኣብነት፦ ጉባኤ ግቢ ዩኒቨርሲቲ …"],"የአባል ኮድ (ለምሳሌ MEM-0001)":["Member code (e.g. MEM-0001)","Koodii miseensaa (fkn MEM-0001)","ኮድ ኣባል (ንኣብነት MEM-0001)"],"ምናሌ":["Menu","Menu","ሜኑ"],"መልስዎ...":["Your reply...","Deebii keessan...","መልስኩም..."],"ሊንኩን ወይም GG-… ኮዱን ይለጥፉ":["Paste the link or the GG-… code","Liinkii yookaan koodii GG-… maxxansaa","ሊንክ ወይ ኮድ GG-… ለጥፉ"],"ለምሳሌ፦ የሳምንት አመራር ስብሰባ":["e.g. Weekly leadership meeting","Fkn: Walga'ii geggeessitootaa torbanaa","ንኣብነት፦ ሰሙናዊ ጉባኤ መሪሕነት"],"ርዕስ ወይም ቃል (ለምሳሌ፦ ጾም)":["Title or word (e.g. fasting)","Mata-duree yookaan jecha (fkn: Soomaa)","ኣርእስቲ ወይ ቃል (ንኣብነት፦ ጾም)"]};
+Object.assign(GG_TR,{"የአመራርነት ሚና":["Leadership role","Gahee geggeessummaa","ሚና መሪሕነት"],"የውሳኔ አሰጣጥ":["Decision making","Murtii kennuu","ውሳነ ምሃብ"],"ተግባቦት":["Communication","Walqunnamtii","ተግባብኦ"],"እቅድ አዘገጃጀት":["Planning","Qophii karoora","ምድላው መደብ"],"ሪሰርች":["Research","Qorannoo","ምርምር"],"የመማር ማስተማር ስነ ዘዴ":["Teaching & learning methodology","Mala barachuu fi barsiisuu","ስነ-ዘዴ ምምሃርን ትምህርትን"],"የቡድን ሥራ":["Teamwork","Hojii gareetti","ጉጅለዊ ስራሕ"],"የመሪ ምልከታ":["Leader's perspective","Ilaalcha geggeessaa","ርእይቶ መራሒ"],"ኦርቶዶክሳዊ አንድነት":["Orthodox unity","Tokkummaa Ortodoksii","ኦርቶዶክሳዊ ሓድነት"],"መንፈሳዊነት":["Spirituality","Hafuuraa","መንፈሳውነት"],"መርሐ ግብር አመራር ሥነ ዘዴ":["Program management methodology","Mala bulchiinsa sagantaa","ስነ-ዘዴ ምምሕዳር መደብ"],"መዝሙር እና ሥርዓቱ":["Hymns and their order","Faarfannaa fi sirna isaa","መዝሙርን ስርዓቱን"],"ሐዋርያዊ ተልዕኮ":["Apostolic mission","Ergama Appostolaa","ሃዋርያዊ ተልእኾ"],"መንፈሳዊ አገልግሎት":["Spiritual service","Tajaajila hafuuraa","መንፈሳዊ ኣገልግሎት"],"የሒሳብ መዝገብ አያያዝ ስልት":["Bookkeeping method","Mala qabiinsa galmee herregaa","ስልቲ ምሕዛው መዝገብ ሕሳብ"],"ስልጠናዎች":["Trainings","Leenjiiwwan","ስልጠናታት"],"ሌላ የስልጠና አይነት ጨምር":["Add another training type","Gosa leenjii kan biraa dabali","ካልእ ዓይነት ስልጠና ወስኽ"],"የስልጠና አይነቶች":["Training types","Gosoota leenjii","ዓይነታት ስልጠና"],"ሌላ የስልጠና አይነት ወይም የኮርስ አይነት ካለ ያክሉ — በክፍል፣ በአቴንዳንስ፣ በሮስተርና በውጤት ምርጫዎች ውስጥ ይታያል።":["Add any other training or course type — it will appear in the class, attendance, roster and result choices.","Gosa leenjii yookaan koorsii kan biraa yoo jiraate dabaladhaa — filannoowwan kutaa, hirmaannaa, roostarii fi bu'aa keessatti mul'ata.","ካልእ ዓይነት ስልጠና ወይ ኮርስ እንተሎ ወስኹ — ኣብ ምርጫታት ክፍሊ፣ ምርካብ፣ ሮስተርን ውጽኢትን ይረአ።"],"ለምሳሌ፦ የኮምፒውተር ስልጠና":["e.g. Computer training","Fkn: leenjii kompiitaraa","ንኣብነት፦ ስልጠና ኮምፒተር"],"የአዲሱን የስልጠና አይነት ስም ያስገቡ":["Enter the name of the new training type","Maqaa gosa leenjii haaraa galchaa","ስም ሓድሽ ዓይነት ስልጠና የእትዉ"],"አጠቃላይ ስልጠና":["General training","Leenjii waliigalaa","ሓፈሻዊ ስልጠና"],"የስልጠና ዓይነት":["Training type","Gosa leenjii","ዓይነት ስልጠና"],"ስልጠና ጨምረዋል ✅":["Training type added ✅","Gosni leenjii dabalameera ✅","ዓይነት ስልጠና ተወሲኹ ✅"],"ይህ ስም አስቀድሞ አለ":["This name already exists","Maqaan kun duraanuu jira","እዚ ስም ኣቐዲሙ ኣሎ"],"የጽሕፈት ቤት (ዋና አመራር)":["Office (main leadership)","Mana Hojii (Geggeessitoota Guguddoo)","ቤት ጽሕፈት (ቀንዲ መሪሕነት)"],"የግቢ ጉባኤው ዋና አመራር":["Main leadership of the Gibi Gubae","Geggeessitoota guguddoo Gibii Gubaa'ee","ቀንዲ መሪሕነት ጉባኤ ግቢ"],"ትምህርትና ሥርዓተ ትምህርት ክፍል":["Education & Curriculum section","Kutaa Barnootaa fi Sirna Barnootaa","ክፍሊ ትምህርትን ስርዓተ ትምህርትን"],"መዝሙርና ኪነ ጥበብ ክፍል":["Hymns & Arts section","Kutaa Faarfannaa fi Ogummaa","ክፍሊ መዝሙርን ኪነ ጥበብን"],"መዝሙር፣ ኪነ ጥበብና የዝማሬ ሥልጠና":["Hymns, arts and chant training","Faarfannaa, ogummaa fi leenjii zimaaree","መዝሙር፣ ኪነ ጥበብን ስልጠና ዝማሬን"],"ሰብሳቢ":["Chairperson","Gaggeessaa","ሰብሳቢ"],"ምክትል ሰብሳቢ":["Vice chairperson","Itti aanaa gaggeessaa","ምክትል ሰብሳቢ"],"ሥርዓተ ትምህርት ዝግጅት":["Curriculum preparation","Qophii sirna barnootaa","ድሌዋት ስርዓተ ትምህርቲ"],"የደረጃ ትምህርቶችን ማዘጋጀትና ማሻሻል":["Preparing and improving level lessons","Barnoota sadarkaa qopheessuu fi fooyyessuu","ትምህርታት ደረጃ ምድላውን ምምሕያሽን"],"መምህራን ምደባና ሥልጠና":["Teacher assignment & training","Ramaddii fi leenjii barsiisotaa","ምድባን ስልጠናን መምህራን"],"መምህራንን መመደብ፣ መከታተልና ማሠልጠን":["Assigning, supervising and training teachers","Barsiisota ramaduu, hordofuu fi leenjisuu","መምህራን ምምዳብ፣ ምክትታልን ምስልጣንን"],"ፈተናና ውጤት":["Exams & results","Qormaataa fi bu'aa","ፈተናን ውጽኢትን"],"ፈተና ማዘጋጀት፣ ውጤት መያዝና ምረቃ":["Preparing exams, keeping results and graduation","Qormaata qopheessuu, bu'aa qabuu fi eebbaa","ፈተና ምድላው፣ ውጽኢት ምሓዝን ምረቓን"],"ቤተ መጻሕፍት":["Library","Mana kitaabaa","ቤተ-መጽሓፍቲ"],"መጻሕፍትና የትምህርት መርጃዎችን ማስተዳደር":["Managing books and teaching aids","Kitaabotaa fi meeshaalee barnootaa bulchuu","መጻሕፍትን ትምህርታዊ ደገፍትን ምምሕዳር"],"መርሐ ግብር ክትትል":["Program follow-up","Hordoffii sagantaa","ክትትል መደብ"],"የመርሐ ግብሮችን አፈጻጸም መከታተልና መገምገም":["Monitoring and evaluating program implementation","Raawwii sagantaalee hordofuu fi madaaluu","ኣተግባርዓ መደባት ምክትታልን ምግምጋምን"],"መዘምራን":["Choir","Faarfattoota","መዘምራን"],"የመዘምራን ቡድን መምራትና ልምምድ":["Leading the choir group and rehearsal","Garee faarfattootaa geggeessuu fi shaakala","ጉጅለ መዘምራን ምምራሕን ልምምድን"],"ኪነ ጥበብ":["Arts","Ogummaa","ኪነ ጥበብ"],"ትያትር፣ ግጥምና ሥነ ጽሑፍ ዝግጅቶች":["Drama, poetry and literature events","Taatoo, walaloo fi sagantaa ogbarruu","ትያትር፣ ግጥምን ስነ ጽሑፍ ዝግጅታትን"],"ዝማሬ ሥልጠና":["Chant training","Leenjii zimaaree","ስልጠና ዝማሬ"],"ለሕፃናትና ለወጣቶች የዝማሬ ትምህርት":["Chant lessons for children and youth","Barnoota zimaaree daa'imman fi dargaggootaaf","ትምህርቲ ዝማሬ ንቆልዑን መንእሰያትን"]});
 (function(){
   const LANGS=[['am','አማርኛ'],['en','English'],['om','Afaan Oromoo'],['ti','ትግርኛ']];
   const IDX={en:0,om:1,ti:2}, ETH=/[ሀ-፿]/;
@@ -3704,6 +3750,339 @@ const GG_TR={"ልዩ ልዩ ስልጠናዎች":["Various trainings","Leenjiiwwa
 
   drawControls(); document.documentElement.lang=lang;
   if(lang!=='am') full();
+})();
+
+
+/* ===== ስልጠና አይነቶች (15 መደበኛ + ተጠቃሚው የሚጨምራቸው) ===== */
+const GG_TRAIN_STD=["የአመራርነት ሚና", "የውሳኔ አሰጣጥ", "ተግባቦት", "እቅድ አዘገጃጀት", "ሪሰርች", "የመማር ማስተማር ስነ ዘዴ", "የቡድን ሥራ", "የመሪ ምልከታ", "ኦርቶዶክሳዊ አንድነት", "መንፈሳዊነት", "መርሐ ግብር አመራር ሥነ ዘዴ", "መዝሙር እና ሥርዓቱ", "ሐዋርያዊ ተልዕኮ", "መንፈሳዊ አገልግሎት", "የሒሳብ መዝገብ አያያዝ ስልት"];
+function ggTrainAll(){ if(!Array.isArray(state.trainingTypes)) state.trainingTypes=[]; return GG_TRAIN_STD.concat(state.trainingTypes.filter(x=>GG_TRAIN_STD.indexOf(x)<0)); }
+const GG_TRAIN_SELECTS=['attClass','regClass','rosClass','gradeSubject','gradeFilterSubject','tRole'];
+function ggFillTrainingSelects(){
+  const all=ggTrainAll(), esc2=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  GG_TRAIN_SELECTS.forEach(id=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    const cur=sel.value;
+    Array.from(sel.querySelectorAll('optgroup[data-train],option[data-train],option[value="ልዩ ልዩ ስልጠናዎች"]')).forEach(o=>o.remove());
+    const g=document.createElement('optgroup'); g.setAttribute('data-train','1'); g.label='🎓 ስልጠናዎች';
+    g.innerHTML=all.map(t=>'<option value="'+esc2(t)+'">'+esc2(t)+'</option>').join('');
+    sel.appendChild(g);
+    const o=document.createElement('option'); o.value='__other__'; o.setAttribute('data-train','1'); o.textContent='➕ ሌላ የስልጠና አይነት ጨምር'; sel.appendChild(o);
+    if(cur && cur!=='__other__' && !Array.from(sel.options).some(x=>x.value===cur)){ const e=document.createElement('option'); e.value=cur; e.textContent=cur; e.setAttribute('data-train','1'); sel.appendChild(e); }
+    sel.value=cur; sel._ggPrev=sel.value;
+  });
+}
+function ggAddTraining(fromSel){
+  const inp=document.getElementById('trainNew');
+  let name = fromSel ? (prompt('የአዲሱን የስልጠና አይነት ስም ያስገቡ')||'') : (inp?inp.value:'');
+  name=name.replace(/\s+/g,' ').trim().slice(0,60);
+  if(!name){ return null; }
+  if(ggTrainAll().indexOf(name)>=0){ showToast('ይህ ስም አስቀድሞ አለ','error'); return name; }
+  state.trainingTypes.push(name); save();
+  if(inp && !fromSel) inp.value='';
+  ggFillTrainingSelects(); ggRenderTrainMgr();
+  showToast('ስልጠና ጨምረዋል ✅');
+  return name;
+}
+function ggDelTraining(i){
+  const name=state.trainingTypes[i]; if(name===undefined) return;
+  if(!confirm('ማጥፋት ይፈልጋሉ?')) return;
+  state.trainingTypes.splice(i,1); save(); ggFillTrainingSelects(); ggRenderTrainMgr();
+}
+function ggRenderTrainMgr(){
+  const host=document.getElementById('trainList'); if(!host) return;
+  const esc2=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  ggTrainAll();
+  host.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+    GG_TRAIN_STD.map(t=>'<span style="background:#eef5f0;border:1px solid #cfe3d6;border-radius:999px;padding:3px 10px;font-size:.8rem">'+esc2(t)+'</span>').join('')+
+    state.trainingTypes.map((t,i)=>'<span style="background:#fff4d6;border:1px solid #ecd48a;border-radius:999px;padding:3px 6px 3px 10px;font-size:.8rem">'+esc2(t)+' <a href="#" onclick="ggDelTraining('+i+');return false" style="color:#B3261E;text-decoration:none;font-weight:700" title="ሰርዝ">✕</a></span>').join('')+'</div>';
+}
+document.addEventListener('change',function(e){
+  const sel=e.target; if(!sel||sel.tagName!=='SELECT'||GG_TRAIN_SELECTS.indexOf(sel.id)<0) return;
+  if(sel.value==='__other__'){
+    const name=ggAddTraining(true);
+    const target=document.getElementById(sel.id);
+    if(name){ target.value=name; } else { target.value=target._ggPrev||''; }
+    target._ggPrev=target.value;
+    target.dispatchEvent(new Event('change',{bubbles:true}));
+  } else sel._ggPrev=sel.value;
+},true);
+(function(){ const _sp=window.showPage; if(typeof _sp==='function'){ window.showPage=function(){ const r=_sp.apply(this,arguments); try{ ggFillTrainingSelects(); }catch(e){} return r; }; } })();
+try{ ggFillTrainingSelects(); ggRenderTrainMgr(); }catch(e){}
+
+const GG_COURSE_CLASSES=["ቀዳማይ","ካላይ","ሳልሳይ","አረባይ","ሀምሳይ"];
+const GG_COURSE_KINDS=["መጽሐፍ ቅዱስ ጥናት","የቤተክርስቲያን ታሪክ በዓለም መድረክ","የቤተክርስቲያን ታሪክ በኢትዮጵያ","አምስቱ አእማደ ሚስጥራት","ሰባቱ ሚስጥራተ ቤተክርስቲያን","የስብከት ዘዴ","ኦጾት"];
+function ggCkKinds(){ if(!Array.isArray(state.courseKinds)) state.courseKinds=[]; return GG_COURSE_KINDS.concat(state.courseKinds.filter(x=>GG_COURSE_KINDS.indexOf(x)<0)); }
+function ggCkOpts(type,cur){
+  const list=type==='class'?GG_COURSE_CLASSES:ggCkKinds();
+  if(cur && list.indexOf(cur)<0) list.push(cur);
+  let o='<option value="">-- ይምረጡ --</option>'+list.map(x=>`<option value="${esc(x)}" ${x===cur?'selected':''}>${esc(x)}</option>`).join('');
+  if(type==='kind') o+='<option value="__ckother__">➕ ሌላ (አዲስ ጨምር)</option>';
+  return o;
+}
+function ggFillCourseSelects(){
+  document.querySelectorAll('select[data-ck]').forEach(sel=>{
+    const cur=sel.value; sel.innerHTML=ggCkOpts(sel.dataset.ck,cur);
+    if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
+  });
+}
+document.addEventListener('change',function(e){
+  const sel=e.target; if(!sel||sel.value!=='__ckother__') return;
+  const name=(prompt('አዲስ የኮርስ አይነት ስም ያስገቡ')||'').trim();
+  if(name){
+    if(ggCkKinds().indexOf(name)<0){ state.courseKinds.push(name); save(); }
+    ggFillCourseSelects(); sel.value=name;
+  } else sel.value='';
+},true);
+(function(){ const _sp=window.showPage; if(typeof _sp==='function'){ window.showPage=function(){ const r=_sp.apply(this,arguments); try{ ggFillCourseSelects(); }catch(e){} return r; }; } })();
+try{ ggFillCourseSelects(); }catch(e){}
+Object.assign(GG_TR,{"የኮርስ ክፍል":["Course level","Kutaa Koorsii","ናይ ኮርስ ክፍሊ"],"የኮርስ አይነት":["Course type","Gosa Koorsii","ዓይነት ኮርስ"],"የሚያስተምሩት የኮርስ አይነት":["Course type taught","Gosa koorsii isaan barsiisan","ዝምህሩ ዓይነት ኮርስ"],"ሌላ (አዲስ ጨምር)":["Other (add new)","Kan biraa (haaraa itti dabali)","ካልእ (ሓድሽ ወስኽ)"],"አዲስ የኮርስ አይነት ስም ያስገቡ":["Enter the new course type name","Maqaa gosa koorsii haaraa galchaa","ሽም ሓድሽ ዓይነት ኮርስ የእትዉ"],
+"ቀዳማይ":["Kedamay (1st)","Qadaamaay (1ffaa)","ቀዳማይ (1ይ)"],"ካላይ":["Kalay (2nd)","Kaalaay (2ffaa)","ካላይ (2ይ)"],"ሳልሳይ":["Salsay (3rd)","Saalsaay (3ffaa)","ሳልሳይ (3ይ)"],"አረባይ":["Arbay (4th)","Arbaay (4ffaa)","ዓረባይ (4ይ)"],"ሀምሳይ":["Hamsay (5th)","Hamsaay (5ffaa)","ሓምሳይ (5ይ)"],
+"መጽሐፍ ቅዱስ ጥናት":["Bible study","Qo'annoo Macaafa Qulqulluu","ጥናት መጽሓፍ ቅዱስ"],"የቤተክርስቲያን ታሪክ በዓለም መድረክ":["Church history in the world","Seenaa Waldaa Kiristaanaa addunyaa irratti","ታሪኽ ቤተክርስቲያን ኣብ ዓለም"],"የቤተክርስቲያን ታሪክ በኢትዮጵያ":["Church history in Ethiopia","Seenaa Waldaa Kiristaanaa Itiyoophiyaa keessatti","ታሪኽ ቤተክርስቲያን ኣብ ኢትዮጵያ"],"አምስቱ አእማደ ሚስጥራት":["The Five Pillars of Mystery","Utubaalee Iccitii Shanan","ሓሙሽተ ኣዕማደ ምስጢር"],"ሰባቱ ሚስጥራተ ቤተክርስቲያን":["The Seven Sacraments","Iccitiiwwan Waldaa Torba","ሸውዓተ ምስጢራት ቤተክርስቲያን"],"የስብከት ዘዴ":["Preaching methods","Mala Lallabaa","ኣገባብ ስብከት"]});
+const GG_EX={
+"ፈተና":["Exams","Qormaata","ፈተና"],
+"ለእያንዳንዱ የስልጠና ዓይነት ፈተና ፍጠሩ፣ በሊንክ ይላኩ፣ ውጤት ይቀበሉ።":["Create an exam for each training type, send it by link and receive the results.","Qormaata gosa leenjii hundaaf qopheessaa, linkiidhaan ergaa, bu'aa fudhadhaa.","ንነፍሲ ወከፍ ዓይነት ስልጠና ፈተና ስርዑ፣ ብሊንክ ሰዱ፣ ውጽኢት ተቐበሉ።"],
+"📥 ውጤት ተቀበል":["📥 Receive result","📥 Bu'aa fudhadhu","📥 ውጽኢት ተቐበል"],
+"✅ ተቀበል":["✅ Accept","✅ Fudhadhu","✅ ተቐበል"],
+"📚 የተፈጠሩ ፈተናዎች":["📚 Created exams","📚 Qormaatawwan uumaman","📚 ዝተፈጠሩ ፈተናታት"],
+"➕ አዲስ ፈተና":["➕ New exam","➕ Qormaata haaraa","➕ ሓድሽ ፈተና"],
+"የፈተና ርዕስ":["Exam title","Mata-duree qormaataa","ኣርእስቲ ፈተና"],
+"የስልጠና ዓይነት":["Training type","Gosa leenjii","ዓይነት ስልጠና"],
+"ጊዜ (ደቂቃ፣ 0 = ገደብ የለም)":["Time (minutes, 0 = no limit)","Yeroo (daqiiqaa, 0 = daanga hin qabu)","ግዜ (ደቒቕ፣ 0 = ደረት የለን)"],
+"ውጤት ወዲያው ለተመዛኙ ይታይ":["Show result to the taker immediately","Bu'aan battalumatti kan qoratamuuf haa mul'atu","ውጽኢት ቀልጢፉ ንተመዛኒ ይርአ"],
+"አይ":["No","Lakki","ኣይ"],"አዎ":["Yes","Eeyyee","እወ"],
+"ጥያቄ ጨምር":["Add question","Gaaffii dabali","ሕቶ ወስኽ"],
+"➕ ጥያቄ ጨምር":["➕ Add question","➕ Gaaffii dabali","➕ ሕቶ ወስኽ"],
+"የጥያቄ አይነት":["Question type","Gosa gaaffii","ዓይነት ሕቶ"],
+"ምርጫ":["Multiple choice","Filannoo","ምርጫ"],
+"እውነት / ሐሰት":["True / False","Dhugaa / Sobaa","ሓቂ / ሓሰት"],
+"እውነት":["True","Dhugaa","ሓቂ"],"ሐሰት":["False","Sobaa","ሓሰት"],
+"ጥያቄ":["Question","Gaaffii","ሕቶ"],
+"ምርጫዎች (በእያንዳንዱ መስመር አንድ)":["Options (one per line)","Filannoowwan (tokko sarara tokkoon)","ምርጫታት (ሓደ ኣብ ሓደ መስመር)"],
+"ትክክለኛ መልስ ቁጥር (1፣ 2…)":["Correct answer number (1, 2…)","Lakkoofsa deebii sirrii (1, 2…)","ቁጽሪ ቅኑዕ መልሲ (1፣ 2…)"],
+"ትክክለኛ መልስ":["Correct answer","Deebii sirrii","ቅኑዕ መልሲ"],
+"📝 ፈተናውን አስቀምጥ":["📝 Save exam","📝 Qormaata kuusi","📝 ፈተና ዓቅብ"],
+"🔗 ሊንክ ቅዳ":["🔗 Copy link","🔗 Linkii garagalchi","🔗 ሊንክ ቀድሕ"],
+"👁 ሞክር":["👁 Try it","👁 Yaali","👁 ፈትን"],
+"📊 ውጤቶች":["📊 Results","📊 Bu'aawwan","📊 ውጽኢታት"],
+"🗑 ሰርዝ":["🗑 Delete","🗑 Haqi","🗑 ሰርዝ"],
+"ጥያቄዎች":["questions","gaaffiiwwan","ሕቶታት"],
+"ተመዛኞች":["examinees","qorataman","ተመዛኖች"],
+"አማካይ":["average","giddugaleessa","ማእከላይ"],
+"ጊዜ ገደብ የለም":["No time limit","Daangaan yeroo hin jiru","ደረት ግዜ የለን"],
+"ፈተና ፍጠር":["Create exam","Qormaata uumi","ፈተና ፍጠር"],
+"📝 ፈተና":["📝 Exam","📝 Qormaata","📝 ፈተና"],
+"ሙሉ ስምዎ":["Your full name","Maqaa guutuu keessan","ምሉእ ስምኩም"],
+"✅ ላክ":["✅ Submit","✅ Ergi","✅ ስደድ"],"ዝጋ":["Close","Cufi","ዕጾ"],
+"✅ ተልኳል":["✅ Submitted","✅ Ergameera","✅ ተላኢኹ"],
+"📋 ኮድ ቅዳ":["📋 Copy code","📋 Koodii garagalchi","📋 ኮድ ቀድሕ"],
+"ይህንን የውጤት ኮድ ገልብጠው ለአስተባባሪው ይላኩ፦":["Copy this result code and send it to the coordinator:","Koodii bu'aa kana garagalchuun qindeessaaf ergaa:","እዚ ኮድ ውጽኢት ቀዲሕኩም ንተሓባባሪ ሰዱ፦"],
+"ዲጂታል ግቢ ጉባኤ":["Digital Gibi Gubae","Gibii Gubaa'ee Dijitaalaa","ዲጂታል ጉባኤ ግቢ"],
+"አባላት፣ ስልጠናዎች፣ ተሳትፎ እና ፈተናዎች — በአንድ እይታ":["Members, trainings, participation and exams — at a glance","Miseensota, leenjiiwwan, hirmaannaa fi qormaatawwan — ilaalcha tokkoon","ኣባላት፣ ስልጠናታት፣ ተሳታፍነትን ፈተናታትን — ብሓደ ጠመተ"],
+"🎓 ስልጠናዎች":["🎓 Trainings","🎓 Leenjiiwwan","🎓 ስልጠናታት"],
+"📅 የተሳትፎ መዝገቦች":["📅 Participation records","📅 Galmeewwan hirmaannaa","📅 መዝገብ ተሳታፍነት"],
+"📝 ፈተናዎች":["📝 Exams","📝 Qormaatawwan","📝 ፈተናታት"],
+"⭐ አማካይ ውጤት":["⭐ Average score","⭐ Giddugaleessa bu'aa","⭐ ማእከላይ ውጽኢት"],
+"📝 የፈተና ውጤት በስልጠና":["📝 Exam results by training","📝 Bu'aa qormaataa gosa leenjiitiin","📝 ውጽኢት ፈተና ብስልጠና"],
+"እስካሁን የፈተና ውጤት የለም።":["No exam results yet.","Hanga ammaatti bu'aan qormaataa hin jiru.","ክሳብ ሕጂ ውጽኢት ፈተና የለን።"],
+"የቅርብ ጊዜ ውጤቶች":["Recent results","Bu'aawwan dhiyoo","ናይ ቀረባ ግዜ ውጽኢታት"]
+};
+(function(){ const re=/^[^\u1200-\u137F\w\d]+/; Object.keys(GG_EX).forEach(k=>{ const c=k.replace(re,'').trim(); const v=GG_EX[k]; if(c!==k){ const vv=v.map(x=>x.replace(re,'').trim()); GG_TR[c]=vv; } else GG_TR[k]=v; }); })();
+
+Object.assign(GG_TR,{"ደቂቃ":["min","daq.","ደቒቕ"]});
+(function(){ const re=/^[^\u1200-\u137F\w\d]+/; Object.keys(GG_TR).forEach(k=>{ const c=k.replace(re,'').trim(); if(c && c!==k && !GG_TR[c]) GG_TR[c]=GG_TR[k]; }); })();
+/* ===== ፈተና ሲስተም (ያለ አገልጋይ፣ በሊንክ) + አዲስ ዳሽቦርድ ===== */
+(function(){
+const $=id=>document.getElementById(id);
+const E=s=>esc(s==null?'':s);
+function exs(){ if(!Array.isArray(state.exams)) state.exams=[]; if(!Array.isArray(state.examResults)) state.examResults=[]; }
+/* --- encoding --- */
+function b64(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return decodeURIComponent(escape(atob(s))); }
+async function pack(obj){
+  const json=JSON.stringify(obj);
+  try{
+    if(typeof CompressionStream==='function'){
+      const cs=new CompressionStream('deflate-raw'); const w=cs.writable.getWriter(); w.write(new TextEncoder().encode(json)); w.close();
+      const buf=new Uint8Array(await new Response(cs.readable).arrayBuffer());
+      let bin=''; buf.forEach(b=>bin+=String.fromCharCode(b));
+      return 'z'+btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    }
+  }catch(e){}
+  return 'p'+b64(json);
+}
+async function unpack(s){
+  if(s[0]==='p') return JSON.parse(unb64(s.slice(1)));
+  let t=s.slice(1).replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t+='=';
+  const bin=atob(t), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  const ds=new DecompressionStream('deflate-raw'); const w=ds.writable.getWriter(); w.write(u); w.close();
+  return JSON.parse(new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()));
+}
+/* --- styles --- */
+const st=document.createElement('style'); st.textContent=`
+.gx-hero{background:linear-gradient(135deg,#0f2e1c,#1a4d2e 60%,#2d7a4f);color:#fff;border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden;box-shadow:0 6px 18px rgba(26,77,46,.25)}
+.gx-hero h2{margin:0 0 4px;font-size:1.5rem;color:#fff}.gx-hero p{margin:0;color:#dce8df;font-size:.9rem}
+.gx-hero .gx-cross{position:absolute;right:18px;top:8px;font-size:4.2rem;color:#c9a227;opacity:.35;line-height:1}
+.gx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.gx-stat{background:#fff;border:1px solid #e7dcae;border-radius:14px;padding:14px 12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.gx-stat.g{background:linear-gradient(160deg,#1a4d2e,#2d7a4f);border-color:#1a4d2e;color:#fff}
+.gx-stat .n{font-size:1.9rem;font-weight:800;color:#1a4d2e;line-height:1.1}.gx-stat.g .n{color:#e6c757}
+.gx-stat .l{font-size:.8rem;margin-top:4px;color:#6b7c72;font-weight:700}.gx-stat.g .l{color:#dce8df}
+.gx-bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.82rem}.gx-bar .t{flex:0 0 38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gx-bar .b{flex:1;background:#eef3ef;border-radius:99px;height:12px;overflow:hidden}.gx-bar .b i{display:block;height:100%;background:linear-gradient(90deg,#c9a227,#e6c757);border-radius:99px}
+.gx-bar .v{flex:0 0 42px;text-align:right;font-weight:800;color:#1a4d2e}
+.gx-q{background:#f8fbf9;border:1px solid #d9e2db;border-radius:12px;padding:12px 14px;margin:10px 0}
+.gx-q b{color:#1a4d2e}.gx-opt{display:block;padding:8px 10px;margin:5px 0;border:1px solid #d9e2db;border-radius:8px;background:#fff;cursor:pointer}
+.gx-opt input{margin-right:8px}.gx-opt:has(input:checked){border-color:#c9a227;background:#fff8dc}
+.gx-take{position:fixed;inset:0;z-index:9999;background:#f0f4f8;overflow:auto;padding:14px}
+.gx-take .gx-in{max-width:760px;margin:0 auto}
+.gx-timer{position:sticky;top:0;background:#1a4d2e;color:#e6c757;padding:8px 14px;border-radius:10px;font-weight:800;text-align:center;margin-bottom:10px;z-index:2}
+.gx-code{width:100%;font-family:monospace;font-size:.75rem;min-height:70px}
+.gx-chip{display:inline-block;background:#fff4d6;border:1px solid #ecd48a;border-radius:99px;padding:2px 10px;font-size:.75rem;margin:0 4px 4px 0}
+`; document.head.appendChild(st);
+/* --- page + menu --- */
+const page=document.createElement('div'); page.id='page-exams'; page.className='page';
+page.innerHTML=`<h2 class="page-title">📝 ፈተና</h2><p class="page-sub">ለእያንዳንዱ የስልጠና ዓይነት ፈተና ፍጠሩ፣ በሊንክ ይላኩ፣ ውጤት ይቀበሉ።</p><div id="gxBody"></div>`;
+const anchor=$('page-structure'); anchor.parentNode.insertBefore(page,anchor);
+const mi=document.createElement('div'); mi.className='menu-item'; mi.setAttribute('onclick',"showPage('exams',this)"); mi.innerHTML='<div class="menu-icon">📝</div> ፈተና';
+const gm=[...document.querySelectorAll('.menu-item')].find(m=>(m.getAttribute('onclick')||'').includes("'grades'")); gm.parentNode.insertBefore(mi,gm.nextSibling);
+/* --- builder --- */
+let draft=[], viewRes=null;
+function trainOpts(sel){ return '<option value="">-- ይምረጡ --</option>'+ggTrainAll().map(x=>`<option ${x===sel?'selected':''}>${E(x)}</option>`).join(''); }
+window.ggExRender=function(){
+  exs(); const b=$('gxBody'); if(!b) return;
+  const list=state.exams.map((e,i)=>{
+    const rs=state.examResults.filter(r=>r.examId===e.id), avg=rs.length?Math.round(rs.reduce((a,r)=>a+r.score/r.max*100,0)/rs.length):0;
+    return `<div class="gx-q"><div><b>${E(e.title)}</b> <span class="gx-chip">${E(e.training||'—')}</span><span class="gx-chip">${e.qs.length} <span>ጥያቄዎች</span></span><span class="gx-chip">${e.minutes?e.minutes+' <span>ደቂቃ</span>':'<span>ጊዜ ገደብ የለም</span>'}</span></div>
+    <div style="font-size:.82rem;color:#6b7c72;margin:4px 0">${rs.length} <span>ተመዛኞች</span> · <span>አማካይ</span> ${avg}%</div>
+    <div class="btn-row" style="margin-top:6px"><button class="btn btn-primary btn-sm" onclick="ggExLink(${i})">🔗 ሊንክ ቅዳ</button><button class="btn btn-info btn-sm" onclick="ggExTry(${i})">👁 ሞክር</button><button class="btn btn-gold btn-sm" onclick="ggExRes(${i})">📊 ውጤቶች</button><button class="btn btn-ghost btn-sm" onclick="ggExDel(${i})">🗑 ሰርዝ</button></div></div>`;
+  }).join('')||'<p class="empty">ፈተና አልተፈጠረም።</p>';
+  let res='';
+  if(viewRes!=null && state.exams[viewRes]){
+    const e=state.exams[viewRes], rs=state.examResults.filter(r=>r.examId===e.id);
+    res=`<div class="card"><h3>📊 ${E(e.title)}</h3>`+(rs.length?`<div style="overflow:auto"><table><thead><tr><th>ስም</th><th>ነጥብ</th><th>%</th><th>ቀን</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${E(r.name)}</td><td>${r.score}/${r.max}</td><td>${Math.round(r.score/r.max*100)}%</td><td>${new Date(r.at).toLocaleDateString()}</td></tr>`).join('')}</tbody></table></div><div class="btn-row"><button class="btn btn-ghost btn-sm" onclick="ggExCsv(${viewRes})">⬇ CSV</button></div>`:'<p class="empty">እስካሁን ውጤት የለም።</p>')+'</div>';
+  }
+  b.innerHTML=`
+  <div class="card"><h3>📥 ውጤት ተቀበል</h3><p style="font-size:.85rem;color:#6b7c72;margin:0 0 8px">ተመዛኙ የላከውን የውጤት ኮድ እዚህ ይለጥፉ።</p>
+    <textarea id="gxCode" class="gx-code" placeholder="R1.…"></textarea><div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" onclick="ggExAccept()">✅ ተቀበል</button></div></div>
+  <div class="card"><h3>📚 የተፈጠሩ ፈተናዎች</h3>${list}</div>${res}
+  <div class="card"><h3>➕ አዲስ ፈተና</h3>
+    <div class="form-grid">
+      <div class="form-field"><label>የፈተና ርዕስ</label><input id="gxTitle" maxlength="80"></div>
+      <div class="form-field"><label>የስልጠና ዓይነት</label><select id="gxTrain">${trainOpts('')}</select></div>
+      <div class="form-field"><label>ጊዜ (ደቂቃ፣ 0 = ገደብ የለም)</label><input id="gxMin" type="number" min="0" value="0"></div>
+      <div class="form-field"><label>ውጤት ወዲያው ለተመዛኙ ይታይ</label><select id="gxInst"><option value="0">አይ</option><option value="1">አዎ</option></select></div>
+    </div>
+    <h4 style="margin:14px 0 6px;color:#1a4d2e">ጥያቄ ጨምር</h4>
+    <div class="form-grid">
+      <div class="form-field"><label>የጥያቄ አይነት</label><select id="gxType"><option value="mc">ምርጫ</option><option value="tf">እውነት / ሐሰት</option></select></div>
+      <div class="form-field full"><label>ጥያቄ</label><input id="gxQ"></div>
+      <div class="form-field full" id="gxOptsW"><label>ምርጫዎች (በእያንዳንዱ መስመር አንድ)</label><textarea id="gxOpts" rows="4"></textarea></div>
+      <div class="form-field" id="gxAnsMcW"><label>ትክክለኛ መልስ ቁጥር (1፣ 2…)</label><input id="gxAns" type="number" min="1" value="1"></div>
+      <div class="form-field" id="gxAnsTfW" style="display:none"><label>ትክክለኛ መልስ</label><select id="gxAnsTf"><option value="0">እውነት</option><option value="1">ሐሰት</option></select></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-gold" onclick="ggExAddQ()">➕ ጥያቄ ጨምር</button></div>
+    <div id="gxDraft">${draftHtml()}</div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="ggExPublish()">📝 ፈተናውን አስቀምጥ</button></div>
+  </div>`;
+  $('gxType').onchange=function(){ const tf=this.value==='tf'; $('gxOptsW').style.display=tf?'none':''; $('gxAnsMcW').style.display=tf?'none':''; $('gxAnsTfW').style.display=tf?'':'none'; };
+};
+function draftHtml(){ return draft.map((q,i)=>`<div class="gx-q"><b>${i+1}.</b> ${E(q.q)} <span class="gx-chip">${q.t==='tf'?'እውነት / ሐሰት':'ምርጫ'}</span> <a href="#" onclick="ggExDq(${i});return false" style="color:#b83b3b;font-weight:700">✕</a></div>`).join(''); }
+window.ggExDq=function(i){ draft.splice(i,1); $('gxDraft').innerHTML=draftHtml(); };
+window.ggExAddQ=function(){
+  const t=$('gxType').value, q=$('gxQ').value.trim(); if(!q){ showToast('ጥያቄ ያስገቡ','error'); return; }
+  if(t==='tf'){ draft.push({t,q,o:['እውነት','ሐሰት'],a:+$('gxAnsTf').value}); }
+  else{ const o=$('gxOpts').value.split('\n').map(x=>x.trim()).filter(Boolean), a=(+$('gxAns').value||1)-1;
+    if(o.length<2){ showToast('ቢያንስ 2 ምርጫዎች ያስፈልጋሉ','error'); return; } if(a<0||a>=o.length){ showToast('የመልስ ቁጥር ከምርጫዎቹ ውጭ ነው','error'); return; }
+    draft.push({t,q,o,a}); }
+  $('gxQ').value=''; $('gxOpts').value=''; $('gxAns').value=1; $('gxDraft').innerHTML=draftHtml();
+};
+window.ggExPublish=function(){
+  exs(); if(!draft.length){ showToast('ቢያንስ አንድ ጥያቄ ይጨምሩ','error'); return; }
+  const tr=$('gxTrain').value; if(!tr){ showToast('የስልጠና ዓይነት ይምረጡ','error'); return; }
+  state.exams.unshift({id:'EX'+Date.now().toString(36),title:$('gxTitle').value.trim()||('ፈተና — '+tr),training:tr,minutes:Math.max(0,+$('gxMin').value||0),instant:$('gxInst').value==='1',qs:draft,at:Date.now()});
+  draft=[]; save(); showToast('ፈተናው ተቀምጧል'); ggExRender();
+};
+window.ggExDel=function(i){ if(!confirm('ይህ ፈተና ይሰረዝ?')) return; exs(); const e=state.exams[i]; state.exams.splice(i,1); state.examResults=state.examResults.filter(r=>r.examId!==e.id); save(); ggExRender(); };
+window.ggExRes=function(i){ viewRes=(viewRes===i?null:i); ggExRender(); };
+window.ggExCsv=function(i){ const e=state.exams[i], rs=state.examResults.filter(r=>r.examId===e.id);
+  const rows=[['ስም','ነጥብ','ከ','%','ቀን']].concat(rs.map(r=>[r.name,r.score,r.max,Math.round(r.score/r.max*100),new Date(r.at).toISOString().slice(0,10)]));
+  const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='exam-results.csv'; a.click(); };
+async function linkFor(e){
+  const o={i:e.id,t:e.title,g:e.training,m:e.minutes,q:e.qs.map(q=>[q.t,q.q,q.o])}; if(e.instant) o.k=e.qs.map(q=>q.a);
+  return location.href.split('#')[0]+'#x='+await pack(o);
+}
+window.ggExLink=async function(i){ const l=await linkFor(state.exams[i]);
+  try{ await navigator.clipboard.writeText(l); showToast('ሊንኩ ተቀድቷል — ለተመዛኞች ይላኩ'); }catch(e){ prompt('ሊንኩን ይቅዱ',l); } };
+window.ggExTry=async function(i){ const l=await linkFor(state.exams[i]); location.hash='x='+l.split('#x=')[1]; };
+window.ggExAccept=async function(){
+  exs(); let c=($('gxCode').value||'').trim(); if(!c){ return; }
+  try{
+    if(c.indexOf('R1.')!==0) throw 0; const r=await unpack(c.slice(3)); const e=state.exams.find(x=>x.id===r.e); if(!e){ showToast('ይህ ፈተና በዚህ መሣሪያ የለም','error'); return; }
+    if(state.examResults.some(x=>x.code===c)){ showToast('ይህ ውጤት አስቀድሞ ተመዝግቧል','error'); return; }
+    let sc=0; e.qs.forEach((q,i)=>{ if(r.a[i]===q.a) sc++; });
+    state.examResults.unshift({id:'R'+Date.now().toString(36),examId:e.id,examTitle:e.title,training:e.training,name:String(r.n||'').slice(0,60),score:sc,max:e.qs.length,at:r.d||Date.now(),code:c});
+    save(); $('gxCode').value=''; showToast('ውጤት ተመዝግቧል፦ '+sc+'/'+e.qs.length); viewRes=state.exams.indexOf(e); ggExRender();
+  }catch(err){ showToast('ኮዱ ልክ አይደለም','error'); }
+};
+/* --- taker overlay --- */
+let tm=null;
+async function openTake(){
+  const m=location.hash.match(/[#&]x=([^&]+)/); const old=$('gxTake'); if(old) old.remove(); clearInterval(tm);
+  if(!m) return;
+  let ex; try{ ex=await unpack(decodeURIComponent(m[1])); }catch(e){ showToast('የፈተና ሊንክ ልክ አይደለም','error'); return; }
+  const ov=document.createElement('div'); ov.id='gxTake'; ov.className='gx-take';
+  const Q=ex.q;
+  ov.innerHTML=`<div class="gx-in"><div class="gx-hero"><span class="gx-cross">✝</span><h2>${E(ex.t)}</h2><p>${E(ex.g||'')} · ${Q.length} ጥያቄዎች</p></div>
+  <div class="card" id="gxTakeBox"><div class="form-field"><label>ሙሉ ስምዎ</label><input id="gxName" maxlength="60"></div>
+  ${ex.m?`<div class="gx-timer" id="gxTimer">⏱ ${ex.m}:00</div>`:''}
+  <div id="gxQs">${Q.map((q,i)=>`<div class="gx-q"><b>${i+1}.</b> ${E(q[1])}${q[2].map((o,j)=>`<label class="gx-opt"><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</div>`).join('')}</div>
+  <div class="btn-row"><button class="btn btn-primary" id="gxSubmit">✅ ላክ</button><button class="btn btn-ghost" id="gxClose">ዝጋ</button></div></div></div>`;
+  document.body.appendChild(ov);
+  const finish=async function(){
+    const name=$('gxName').value.trim(); if(!name){ showToast('ስምዎን ያስገቡ','error'); return false; }
+    clearInterval(tm);
+    const a=Q.map((q,i)=>{ const r=document.querySelector('input[name="q'+i+'"]:checked'); return r?+r.value:-1; });
+    const code='R1.'+await pack({e:ex.i,n:name,a,d:Date.now()});
+    let score=''; if(ex.k){ let s=0; ex.k.forEach((k,i)=>{ if(a[i]===k) s++; }); score=`<div class="gx-stat g" style="margin:10px 0"><div class="n">${s}/${Q.length}</div><div class="l">${Math.round(s/Q.length*100)}%</div></div>`; }
+    $('gxTakeBox').innerHTML=`<h3>✅ ተልኳል</h3>${score}<p style="font-size:.9rem">ይህንን የውጤት ኮድ ገልብጠው ለአስተባባሪው ይላኩ፦</p><textarea class="gx-code" id="gxOut" readonly>${code}</textarea><div class="btn-row"><button class="btn btn-gold" id="gxCopy">📋 ኮድ ቅዳ</button><button class="btn btn-ghost" id="gxClose2">ዝጋ</button></div>`;
+    $('gxCopy').onclick=function(){ $('gxOut').select(); try{ navigator.clipboard.writeText(code); }catch(e){ document.execCommand('copy'); } showToast('ተቀድቷል'); };
+    $('gxClose2').onclick=closeTake; return true;
+  };
+  function closeTake(){ clearInterval(tm); ov.remove(); history.replaceState(null,'',location.href.split('#')[0]); }
+  $('gxSubmit').onclick=finish; $('gxClose').onclick=closeTake;
+  if(ex.m){ let left=ex.m*60; tm=setInterval(function(){ left--; const t=$('gxTimer'); if(t) t.textContent='⏱ '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0'); if(left<=0){ clearInterval(tm); if(!$('gxName').value.trim()) $('gxName').value='—'; finish(); } },1000); }
+}
+window.addEventListener('hashchange',openTake); openTake();
+/* --- showPage hook --- */
+(function(){ const sp=window.showPage; window.showPage=function(id){ const r=sp.apply(this,arguments); try{ if(id==='exams'){ trainOptsRefresh(); ggExRender(); } }catch(e){} return r; }; })();
+function trainOptsRefresh(){}
+/* --- new dashboard --- */
+const rd=window.renderDashboard;
+window.renderDashboard=function(){
+  rd.apply(this,arguments); exs();
+  const pg=$('page-dashboard'); const rs=state.examResults, nEx=state.exams.length;
+  const avg=rs.length?Math.round(rs.reduce((a,r)=>a+r.score/r.max*100,0)/rs.length):0;
+  const pres=state.attendance.length?Math.round(state.attendance.filter(a=>a.status==='present'||a.status==='ተገኝቷል'||a.status==='ተገኝ').length/state.attendance.length*100):0;
+  if(!$('gxHero')){ const h=document.createElement('div'); h.id='gxHero'; h.className='gx-hero';
+    h.innerHTML='<span class="gx-cross">✝</span><h2>ዲጂታል ግቢ ጉባኤ</h2><p>አባላት፣ ስልጠናዎች፣ ተሳትፎ እና ፈተናዎች — በአንድ እይታ</p>'; pg.insertBefore(h,pg.firstChild); }
+  $('dashStats').className='gx-stats';
+  $('dashStats').innerHTML=`
+   <div class="gx-stat g"><div class="n">${state.members.length}</div><div class="l">👥 አባላት</div></div>
+   <div class="gx-stat"><div class="n">${state.students.length}</div><div class="l">📕 ተማሪዎች</div></div>
+   <div class="gx-stat"><div class="n">${state.teachers.length}</div><div class="l">👨‍🏫 መምህራን</div></div>
+   <div class="gx-stat g"><div class="n">${ggTrainAll().length}</div><div class="l">🎓 ስልጠናዎች</div></div>
+   <div class="gx-stat"><div class="n">${state.attendance.length}</div><div class="l">📅 የተሳትፎ መዝገቦች</div></div>
+   <div class="gx-stat"><div class="n">${nEx}</div><div class="l">📝 ፈተናዎች</div></div>
+   <div class="gx-stat g"><div class="n">${avg}%</div><div class="l">⭐ አማካይ ውጤት</div></div>`;
+  const qa=pg.querySelector('.dash-actions'); if(qa && !qa.querySelector('[data-gx]')){ const b=document.createElement('button'); b.className='btn btn-gold'; b.setAttribute('data-gx','1'); b.textContent='📝 ፈተና'; b.onclick=function(){ showPageById('exams'); }; qa.appendChild(b); }
+  let card=$('gxDashCard'); if(!card){ card=document.createElement('div'); card.id='gxDashCard'; card.className='card'; const col=pg.querySelector('.dash-col'); col.appendChild(card); }
+  const by={}; rs.forEach(r=>{ const k=r.training||'—'; (by[k]=by[k]||[]).push(r.score/r.max*100); });
+  const bars=Object.keys(by).map(k=>({k,v:Math.round(by[k].reduce((a,b)=>a+b,0)/by[k].length)})).sort((a,b)=>b.v-a.v).slice(0,8);
+  card.innerHTML='<h3>📝 የፈተና ውጤት በስልጠና</h3>'+(bars.length?bars.map(b=>`<div class="gx-bar"><span class="t">${E(b.k)}</span><span class="b"><i style="width:${b.v}%"></i></span><span class="v">${b.v}%</span></div>`).join(''):'<p class="empty" style="padding:14px">እስካሁን የፈተና ውጤት የለም።</p>')
+    +(rs.length?'<h4 style="margin:12px 0 4px;color:#1a4d2e">የቅርብ ጊዜ ውጤቶች</h4>'+rs.slice(0,5).map(r=>`<div style="display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0;border-bottom:1px dashed #d9e2db"><span>${E(r.name)} · ${E(r.training||'')}</span><b style="color:#1a4d2e">${r.score}/${r.max}</b></div>`).join(''):'');
+};
+try{ renderDashboard(); }catch(e){ console.error(e); }
 })();
 
 </script>
