@@ -3618,12 +3618,19 @@ function ggMemberLogin(){
 }
 async function ggDoLogin(){
   const code=document.getElementById('ggMCode').value.trim().toUpperCase(), pin=document.getElementById('ggMPin').value.trim(), msg=document.getElementById('ggMMsg');
-  if(!code||pin.length<4){ msg.textContent='ኮድና ቢያንስ 4 ፊደል/ቁጥር PIN ያስገቡ'; return; }
-  const ph=await ggHash(code,pin);
+  const left=ggThrottleLeft(); if(left>0){ msg.textContent='ብዙ ሙከራ — '+left+' ሰከንድ ይጠብቁ'; return; }
+  if(!code||!pin){ msg.textContent='ኮድና የይለፍ ቃል ያስገቡ'; return; }
+  const ph=await ggHash2(code,pin), phLegacy=await ggHash(code,pin);
   try{
     let j=await ggCall({action:'m_login', code, pinHash:ph});
-    if(j.needPin){ const s=await ggCall({action:'set_pin', code, pinHash:ph}); if(!s.ok){ msg.textContent=s.error||'ስህተት'; return; } j=await ggCall({action:'m_login', code, pinHash:ph}); }
-    if(!j.ok){ msg.textContent=j.error||'ስህተት'; return; }
+    if(j.needPin){
+      const sr=ggStrength(pin,code); if(!sr.ok){ msg.textContent='ደካማ የይለፍ ቃል — '+sr.issues.join('፣'); return; }
+      if(pin!==document.getElementById('ggMPin2').value){ msg.textContent='ሁለቱ የይለፍ ቃሎች አይመሳሰሉም'; return; }
+      const s=await ggCall({action:'set_pin', code, pinHash:ph}); if(!s.ok){ msg.textContent=s.error||'ስህተት'; return; }
+      j=await ggCall({action:'m_login', code, pinHash:ph});
+    } else if(!j.ok && phLegacy!==ph){ const j1=await ggCall({action:'m_login', code, pinHash:phLegacy}); if(j1.ok) j=j1; }
+    if(!j.ok){ ggFail(); msg.textContent=j.error||'ስህተት'; return; }
+    ggFailReset();
     const ann=(j.announcements||[]).map(a=>`<div style="border-bottom:1px solid var(--border);padding:8px 0;"><strong>${esc(a.title)}</strong><div style="font-size:0.84rem;">${esc(a.body)}</div></div>`).join('')||'<p style="color:var(--muted)">ማስታወቂያ የለም</p>';
     const gr=(j.grades||[]).map(g=>`<tr><td>${esc(g.subject)}</td><td>${esc(g.examType||'')}</td><td>${esc(String(g.score))}</td><td>${esc(g.date||'')}</td></tr>`).join('');
     const grT=gr?`<div class="table-wrap"><table><thead><tr><th>አጠቃላይ ስልጠና</th><th>ዓይነት</th><th>ነጥብ</th><th>ቀን</th></tr></thead><tbody>${gr}</tbody></table></div>`:'<p style="color:var(--muted)">ውጤት የለም</p>';
@@ -4083,6 +4090,159 @@ window.renderDashboard=function(){
     +(rs.length?'<h4 style="margin:12px 0 4px;color:#1a4d2e">የቅርብ ጊዜ ውጤቶች</h4>'+rs.slice(0,5).map(r=>`<div style="display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0;border-bottom:1px dashed #d9e2db"><span>${E(r.name)} · ${E(r.training||'')}</span><b style="color:#1a4d2e">${r.score}/${r.max}</b></div>`).join(''):'');
 };
 try{ renderDashboard(); }catch(e){ console.error(e); }
+})();
+
+const GG_SEC={
+"የይለፍ ቃል":["Password","Jecha icciitii","መሕለፊ ቃል"],
+"የይለፍ ቃል አረጋግጥ (መጀመሪያ ሲገቡ ብቻ)":["Confirm password (first sign-in only)","Jecha icciitii mirkaneessi (seensa jalqabaa qofa)","መሕለፊ ቃል ኣረጋግጽ (ሓደ ግዜ ኣብ ቀዳማይ እተው ጥራይ)"],
+"መጀመሪያ ሲገቡ ጠንካራ የይለፍ ቃል ይፍጠሩ፦ ቢያንስ 8 ቁምፊ፣ ፊደልና ቁጥር ያለው።":["On first sign-in create a strong password: at least 8 characters with letters and numbers.","Yeroo jalqabaa seentanitti jecha icciitii cimaa uumaa: yoo xiqqaate arfii 8, qubee fi lakkoofsa qabu.","ብቀዳማይ እተው መሕለፊ ቃል ሓያል ፍጠሩ፦ እንተወሓደ 8 ፊደላት፣ ፊደልን ቁጽርን ዘለዎ።"],
+"🎲 ጠንካራ ፍጠር":["🎲 Generate strong one","🎲 Cimaa uumi","🎲 ሓያል ፍጠር"],
+"🔒 መቆለፊያ":["🔒 Lock","🔒 Cufaa","🔒 መቁለፊ"],
+"🔒 የመተግበሪያ መቆለፊያ":["🔒 App lock","🔒 Cufaa appii","🔒 መቁለፊ ኣፕ"],
+"አዲስ የይለፍ ቃል":["New password","Jecha icciitii haaraa","ሓድሽ መሕለፊ ቃል"],
+"አረጋግጥ":["Confirm","Mirkaneessi","ኣረጋግጽ"],
+"🔒 አብራ":["🔒 Turn on","🔒 Banii","🔒 ኣብርህ"],
+"🔓 አጥፋ":["🔓 Turn off","🔓 Dhiisi","🔓 ኣጥፍእ"],
+"🔒 አሁን ቆልፍ":["🔒 Lock now","🔒 Amma cufi","🔒 ሕጂ ቆልፍ"],
+"🔓 ክፈት":["🔓 Unlock","🔓 Bani","🔓 ክፈት"],
+"የግቢ ጉባኤ — የተቆለፈ":["Gibi Gubae — Locked","Gibii Gubaa'ee — Cufame","ጉባኤ ግቢ — ዝተቆለፈ"],
+"📷 የተማሪ ፎቶ":["📷 Student photo","📷 Suuraa barataa","📷 ስእሊ ተማሃራይ"],
+"📷 ፎቶ ምረጥ":["📷 Choose photo","📷 Suuraa filadhu","📷 ስእሊ ሕረይ"],
+"🗑 ፎቶ አጥፋ":["🗑 Remove photo","🗑 Suuraa haqi","🗑 ስእሊ ኣጥፍእ"],
+"ተማሪን ሲጫኑ፦ ✓ ተገኝቷል → ⏰ ዘግይቷል → ፈ ፈቃድ → ✗ ቀርቷል":["Tap a student: ✓ present → ⏰ late → ፈ excused → ✗ absent","Barataa tuquun: ✓ argameera → ⏰ tureera → ፈ hayyama → ✗ hin argamne","ተማሃራይ ምስ ጠዋቕኩም፦ ✓ ተረኺቡ → ⏰ ደንጉዩ → ፈ ፍቓድ → ✗ ኣይተረኽበን"]
+};
+(function(){ const re=/^[^ሀ-፿\w\d]+/; Object.keys(GG_SEC).forEach(k=>{ const c=k.replace(re,'').trim(); const v=GG_SEC[k]; if(c!==k){ GG_TR[c]=v.map(x=>x.replace(re,'').trim()); } else GG_TR[k]=v; }); })();
+
+/* ===== ደኅንነት፣ መታወቂያ ፎቶ፣ አቴንዳንስ ማሻሻያ ===== */
+(function(){
+const $=id=>document.getElementById(id);
+/* --- strength --- */
+const COMMON=['password','12345678','123456789','qwerty123','11111111','00000000','abcd1234','abc12345','password1','iloveyou','admin123','letmein1'];
+window.ggStrength=function(p,code){
+  p=p||''; const issues=[]; let sc=0;
+  if(p.length>=8) sc++; else issues.push('ቢያንስ 8 ቁምፊ');
+  if(p.length>=12) sc++;
+  if(/[A-Za-zሀ-፿]/.test(p)) sc++; else issues.push('ፊደል ያስፈልጋል');
+  if(/\d/.test(p)) sc++; else issues.push('ቁጥር ያስፈልጋል');
+  if(/[^A-Za-z0-9ሀ-፿]/.test(p)||(/[a-z]/.test(p)&&/[A-Z]/.test(p))) sc++;
+  const low=p.toLowerCase();
+  if(COMMON.indexOf(low)>=0||/^(.)\1+$/.test(p)||/(0123|1234|2345|3456|4567|5678|6789|abcd|qwer)/.test(low)&&p.length<12){ issues.push('በቀላሉ የሚገመት ነው'); sc=Math.min(sc,1); }
+  if(code && low.indexOf(String(code).toLowerCase())>=0){ issues.push('ኮድዎን አይጠቀሙ'); sc=Math.min(sc,1); }
+  const ok=p.length>=8&&/[A-Za-zሀ-፿]/.test(p)&&/\d/.test(p)&&!issues.some(x=>x==='በቀላሉ የሚገመት ነው'||x==='ኮድዎን አይጠቀሙ');
+  return {ok,score:Math.min(sc,5),issues,label:sc>=5?'በጣም ጠንካራ':sc>=4?'ጠንካራ':sc>=3?'መካከለኛ':'ደካማ'};
+};
+window.ggGenPw=function(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%'; const u=new Uint32Array(14); crypto.getRandomValues(u); let s=''; u.forEach(x=>s+=A[x%A.length]); return s; };
+function meterHtml(id){ return `<div id="${id}" style="font-size:.78rem;margin-top:4px"></div>`; }
+function drawMeter(el,p,code){ if(!el) return; if(!p){ el.innerHTML=''; return; } const r=ggStrength(p,code); const cols=['#b83b3b','#b83b3b','#e08a00','#c9a227','#2d7a4f','#1a4d2e'];
+  el.innerHTML=`<div style="height:6px;background:#e5ebe7;border-radius:9px;overflow:hidden"><i style="display:block;height:100%;width:${r.score*20}%;background:${cols[r.score]}"></i></div><span style="color:${cols[r.score]};font-weight:700">${r.label}</span>${r.issues.length?' — '+r.issues.join('፣ '):''}`; }
+/* --- PBKDF2 hash (v2) --- */
+window.ggHash2=async function(code,pw){
+  try{ const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+    const b=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new TextEncoder().encode('GG2:'+code),iterations:150000},k,256);
+    return 'v2$'+Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  }catch(e){ return ggHash(code,pw); } };
+/* --- throttle --- */
+function thr(){ try{ return JSON.parse(localStorage.getItem('gg_fail')||'{}'); }catch(e){ return {}; } }
+window.ggThrottleLeft=function(){ const t=thr(); return Math.max(0,Math.ceil(((t.until||0)-Date.now())/1000)); };
+window.ggFail=function(){ const t=thr(); t.n=(t.n||0)+1; if(t.n>=5){ t.until=Date.now()+Math.min(900,30*Math.pow(2,t.n-5))*1000; } try{ localStorage.setItem('gg_fail',JSON.stringify(t)); }catch(e){} };
+window.ggFailReset=function(){ try{ localStorage.removeItem('gg_fail'); }catch(e){} };
+/* --- member login modal (new) --- */
+window.ggMemberLogin=function(){
+  showModal('👤 በምዝገባ ኮድ ግባ',`
+   <div class="form-grid">
+    <div class="form-field full"><label>የምዝገባ ኮድ (ለምሳሌ GG-0001)</label><input type="text" id="ggMCode" autocomplete="off"></div>
+    <div class="form-field full"><label>የይለፍ ቃል</label><div style="display:flex;gap:6px"><input type="password" id="ggMPin" autocomplete="off" style="flex:1"><button type="button" class="btn btn-ghost btn-sm" id="ggMEye">👁</button></div>${meterHtml('ggMMeter')}</div>
+    <div class="form-field full"><label>የይለፍ ቃል አረጋግጥ (መጀመሪያ ሲገቡ ብቻ)</label><input type="password" id="ggMPin2" autocomplete="off"></div>
+   </div>
+   <p style="font-size:.78rem;color:var(--muted)">መጀመሪያ ሲገቡ ጠንካራ የይለፍ ቃል ይፍጠሩ፦ ቢያንስ 8 ቁምፊ፣ ፊደልና ቁጥር ያለው።</p>
+   <div class="btn-row" style="margin-top:6px"><button type="button" class="btn btn-gold btn-sm" id="ggMGen">🎲 ጠንካራ ፍጠር</button></div>
+   <p id="ggMMsg" style="font-size:0.82rem;color:var(--danger);margin-top:8px;"></p>`,
+   '<button class="btn btn-primary" onclick="ggDoLogin()">ግባ</button> <button class="btn btn-ghost" onclick="closeModal()">ዝጋ</button>');
+  $('ggMPin').oninput=function(){ drawMeter($('ggMMeter'),this.value,$('ggMCode').value.trim()); };
+  $('ggMEye').onclick=function(){ const t=$('ggMPin').type==='password'; $('ggMPin').type=t?'text':'password'; $('ggMPin2').type=$('ggMPin').type; };
+  $('ggMGen').onclick=function(){ const p=ggGenPw(); $('ggMPin').value=p; $('ggMPin2').value=p; $('ggMPin').type='text'; drawMeter($('ggMMeter'),p,''); $('ggMMsg').style.color='var(--primary)'; $('ggMMsg').textContent='ይህንን የይለፍ ቃል በአስተማማኝ ቦታ ይጻፉ — መልሶ ማየት አይቻልም።'; };
+};
+/* --- app lock --- */
+const LK='gg_lock_v1';
+function lockRec(){ try{ return JSON.parse(localStorage.getItem(LK)||'null'); }catch(e){ return null; } }
+async function lh(pw,salt){ const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']); const b=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new TextEncoder().encode(salt),iterations:150000},k,256); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function showLock(){
+  if(document.getElementById('ggLockOv')) return;
+  const ov=document.createElement('div'); ov.id='ggLockOv'; ov.style.cssText='position:fixed;inset:0;z-index:100000;background:linear-gradient(135deg,#0f2e1c,#1a4d2e);display:flex;align-items:center;justify-content:center;padding:18px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:360px;width:100%;padding:22px;text-align:center"><div style="font-size:2.4rem;color:#c9a227">✝</div><h3 style="color:#1a4d2e;margin:6px 0 12px">የግቢ ጉባኤ — የተቆለፈ</h3><input type="password" id="ggUnlockPw" placeholder="የይለፍ ቃል" style="width:100%;padding:10px;border:1px solid #d9e2db;border-radius:8px;font-family:inherit"><p id="ggUnlockMsg" style="color:#b83b3b;font-size:.82rem;min-height:1.2em;margin:8px 0"></p><button class="btn btn-primary" id="ggUnlockBtn" style="width:100%">🔓 ክፈት</button></div>`;
+  document.body.appendChild(ov);
+  const go=async function(){
+    const m=$('ggUnlockMsg'), left=ggThrottleLeft(); if(left>0){ m.textContent='ብዙ ሙከራ — '+left+' ሰከንድ ይጠብቁ'; return; }
+    const r=lockRec(); if(!r){ ov.remove(); return; }
+    const h=await lh($('ggUnlockPw').value,r.salt);
+    if(h===r.hash){ ggFailReset(); try{ sessionStorage.setItem('gg_unlocked','1'); }catch(e){} ov.remove(); }
+    else{ ggFail(); m.textContent='የይለፍ ቃሉ ትክክል አይደለም'; $('ggUnlockPw').value=''; }
+  };
+  $('ggUnlockBtn').onclick=go; $('ggUnlockPw').onkeydown=function(e){ if(e.key==='Enter') go(); }; setTimeout(()=>$('ggUnlockPw').focus(),50);
+}
+window.ggLockDialog=function(){
+  const r=lockRec();
+  if(!r){
+    showModal('🔒 የመተግበሪያ መቆለፊያ',`<p style="font-size:.84rem">መተግበሪያውን ሲከፍቱ የይለፍ ቃል እንዲጠየቅ ያደርጋል። ይህ በዚህ መሣሪያ ላይ ያለውን ማያ ይቆልፋል።</p>
+     <div class="form-grid"><div class="form-field full"><label>አዲስ የይለፍ ቃል</label><input type="password" id="ggLkPw">${meterHtml('ggLkMeter')}</div>
+     <div class="form-field full"><label>አረጋግጥ</label><input type="password" id="ggLkPw2"></div></div>
+     <label style="display:block;margin:10px 0;font-size:.82rem"><input type="checkbox" id="ggLkAck"> የይለፍ ቃሉን ከረሳሁ ዳታዬን ከክላውድ ምትኬ ብቻ ማግኘት እንደምችል ተረድቻለሁ</label>
+     <button type="button" class="btn btn-gold btn-sm" id="ggLkGen">🎲 ጠንካራ ፍጠር</button><p id="ggLkMsg" style="color:var(--danger);font-size:.82rem;margin-top:8px"></p>`,
+     '<button class="btn btn-primary" id="ggLkSave">🔒 አብራ</button> <button class="btn btn-ghost" onclick="closeModal()">ዝጋ</button>');
+    $('ggLkPw').oninput=function(){ drawMeter($('ggLkMeter'),this.value,''); };
+    $('ggLkGen').onclick=function(){ const p=ggGenPw(); $('ggLkPw').value=p; $('ggLkPw2').value=p; $('ggLkPw').type='text'; drawMeter($('ggLkMeter'),p,''); $('ggLkMsg').style.color='var(--primary)'; $('ggLkMsg').textContent='ይህንን ይጻፉት፦ '+p; };
+    $('ggLkSave').onclick=async function(){ const p=$('ggLkPw').value, m=$('ggLkMsg'); m.style.color='var(--danger)';
+      const s=ggStrength(p,''); if(!s.ok){ m.textContent='ደካማ ነው — '+s.issues.join('፣'); return; }
+      if(p!==$('ggLkPw2').value){ m.textContent='ሁለቱ አይመሳሰሉም'; return; }
+      if(!$('ggLkAck').checked){ m.textContent='ማስጠንቀቂያውን ያረጋግጡ'; return; }
+      const salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join('');
+      localStorage.setItem(LK,JSON.stringify({salt,hash:await lh(p,salt)})); try{ sessionStorage.setItem('gg_unlocked','1'); }catch(e){} closeModal(); showToast('መቆለፊያ በርቷል 🔒'); };
+  } else {
+    showModal('🔒 የመተግበሪያ መቆለፊያ',`<p style="font-size:.84rem">መቆለፊያ በርቷል። ለማጥፋት የአሁኑን የይለፍ ቃል ያስገቡ።</p><div class="form-field full"><label>የአሁኑ የይለፍ ቃል</label><input type="password" id="ggLkCur"></div><p id="ggLkMsg" style="color:var(--danger);font-size:.82rem;margin-top:8px"></p>`,
+     '<button class="btn btn-danger" id="ggLkOff">🔓 አጥፋ</button> <button class="btn btn-gold" id="ggLkNow">🔒 አሁን ቆልፍ</button> <button class="btn btn-ghost" onclick="closeModal()">ዝጋ</button>');
+    $('ggLkNow').onclick=function(){ try{ sessionStorage.removeItem('gg_unlocked'); }catch(e){} closeModal(); showLock(); };
+    $('ggLkOff').onclick=async function(){ const left=ggThrottleLeft(); if(left>0){ $('ggLkMsg').textContent='ብዙ ሙከራ — '+left+' ሰከንድ'; return; }
+      if(await lh($('ggLkCur').value,r.salt)===r.hash){ ggFailReset(); localStorage.removeItem(LK); closeModal(); showToast('መቆለፊያ ጠፍቷል'); } else { ggFail(); $('ggLkMsg').textContent='የይለፍ ቃሉ ትክክል አይደለም'; } };
+  }
+};
+{ const lb=document.createElement('button'); lb.className='header-menu'; lb.id='ggLockBtn'; lb.textContent='🔒 መቆለፊያ'; lb.onclick=ggLockDialog; lb.style.cssText='width:auto;padding:0 12px;font-size:0.8rem;font-family:inherit;'; lb.title='የመተግበሪያ መቆለፊያ';
+  const mb=[...document.querySelectorAll('#ggLangSel~button,#ggLangSel~*')].find(e=>(e.getAttribute('onclick')||'').indexOf('ggMemberLogin')>=0)||document.querySelector('[onclick*="ggMemberLogin"]');
+  if(mb) mb.parentNode.insertBefore(lb,mb); }
+if(lockRec() && !(function(){ try{ return sessionStorage.getItem('gg_unlocked'); }catch(e){ return null; } })()) showLock();
+/* --- ADMIN_KEY strength hint --- */
+document.addEventListener('input',function(e){ const t=e.target; if(!t||(t.id!=='ggKey'&&t.id!=='ggRsKey')) return; let m=$(t.id+'Meter'); if(!m){ m=document.createElement('div'); m.id=t.id+'Meter'; m.style.cssText='font-size:.78rem;margin-top:4px'; t.parentNode.appendChild(m); }
+  const s=ggStrength(t.value,''); m.innerHTML=t.value?`<span style="color:${s.ok&&t.value.length>=12?'#1a4d2e':'#b83b3b'};font-weight:700">${t.value.length>=12&&s.ok?'ጠንካራ ሚስጥር':'ደካማ — ቢያንስ 12 ቁምፊ፣ ፊደልና ቁጥር ይጠቀሙ'}</span>`:''; });
+/* --- ID photo --- */
+const st=document.createElement('style'); st.textContent='.id-photo img{width:100%;height:100%;object-fit:cover;border-radius:6px;display:block}.id-photo{overflow:hidden}.att-item.late{background:#fff8dc;border-color:#c9a227}.att-item.excused{background:#e8f0fb;border-color:var(--info)}.att-check.l{background:#c9a227;border-color:#c9a227;color:#fff}.att-check.e{background:var(--info);border-color:var(--info);color:#fff}'; document.head.appendChild(st);
+(function(){ const o=window.buildIdCardHTML; window.buildIdCardHTML=function(s){ let h=o(s); if(s.photo) h=h.replace('<div class="id-photo">👤</div>','<div class="id-photo"><img src="'+s.photo+'" alt=""></div>'); return h; }; })();
+const pg=$('page-idcards'); const pc=document.createElement('div'); pc.className='card'; pc.innerHTML=`<h3>📷 የተማሪ ፎቶ</h3><p style="font-size:.84rem;color:var(--muted);margin:0 0 8px">ከላይ ተማሪ ይምረጡና ፎቶ ያስገቡ — ወደ ጥራቱ ተጠብቆ ይቀነሳል፣ በመታወቂያው ላይ ይታተማል።</p><div class="btn-row" style="margin-top:6px"><label class="btn btn-gold" style="cursor:pointer">📷 ፎቶ ምረጥ<input type="file" accept="image/*" id="ggPhotoIn" style="display:none"></label><button class="btn btn-ghost" id="ggPhotoDel">🗑 ፎቶ አጥፋ</button></div>`;
+pg.insertBefore(pc,pg.querySelectorAll('.card')[0].nextSibling);
+$('ggPhotoIn').onchange=function(){ const id=$('idStudentSelect').value, f=this.files[0]; this.value=''; if(!id){ showToast('መጀመሪያ ተማሪ ይምረጡ','error'); return; } if(!f) return;
+  const img=new Image(); img.onload=function(){ const W=360,H=460, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); const r=Math.max(W/img.width,H/img.height), w=img.width*r, h=img.height*r; x.fillStyle='#fff'; x.fillRect(0,0,W,H); x.drawImage(img,(W-w)/2,(H-h)/2,w,h);
+    const s=state.students.find(q=>q.id===id); s.photo=c.toDataURL('image/jpeg',0.86); save(); previewIdCard(); showToast('ፎቶ ተቀምጧል'); URL.revokeObjectURL(img.src); }; img.onerror=function(){ showToast('ፎቶው አልተነበበም','error'); }; img.src=URL.createObjectURL(f); };
+$('ggPhotoDel').onclick=function(){ const id=$('idStudentSelect').value; const s=state.students.find(q=>q.id===id); if(!s) return; delete s.photo; save(); previewIdCard(); };
+(function(){ const o=window.printIdCardFor; window.printIdCardFor=function(id){ const w=window.open; let ww=null; window.open=function(){ ww=w.apply(window,arguments); return ww; }; try{ o(id); }finally{ window.open=w; }
+  if(ww){ try{ ww.document.write('<style>@page{size:auto;margin:8mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.id-card{width:85.6mm!important}.id-photo img{width:100%;height:100%;object-fit:cover}</style>'); }catch(e){} } }; })();
+/* --- attendance: 4 statuses, edit, print --- */
+window.cycleAttendance=function(id){ const seq=['present','late','excused','absent',''], cur=attTemp[id]||'', n=seq[(seq.indexOf(cur)+1)%seq.length]; if(n) attTemp[id]=n; else delete attTemp[id]; renderAttendance(); };
+window.attEditId=null;
+window.saveAttendance=function(){
+  const date=$('attDate').value, cls=$('attClass').value||'ሁሉም'; if(!date){ showToast('ቀን ይምረጡ','error'); return; } if(!Object.keys(attTemp).length){ showToast('ምንም አልተመዘገበም','error'); return; }
+  let list=state.students; if(cls!=='ሁሉም') list=list.filter(s=>s.class===cls);
+  const f=list.filter(s=>attTemp[s.id]);
+  if(attEditId){ const old=state.attendance.find(a=>a.id===attEditId); if(old) (old.records||[]).forEach(r=>{ if(!f.some(s=>s.id===r.studentId) && attTemp[r.studentId]) f.push({id:r.studentId,fullName:r.name}); }); }
+  const c=k=>f.filter(s=>attTemp[s.id]===k).length, late=c('late'), exc=c('excused'), pr=c('present')+late, ab=c('absent');
+  const rec={id:attEditId||('ATT-'+Date.now()),date,class:cls,present:pr,absent:ab,late,excused:exc,total:pr+ab+exc,records:f.map(s=>({studentId:s.id,name:s.fullName,status:attTemp[s.id]}))};
+  if(attEditId){ const i=state.attendance.findIndex(a=>a.id===attEditId); if(i>=0) state.attendance[i]=rec; else state.attendance.unshift(rec); } else state.attendance.unshift(rec);
+  const was=attEditId; attEditId=null; save(); attTemp={}; renderAttendance(); showToast((was?'ተስተካክሏል! ':'ተመዝግቧል! ')+pr+' ተገኝተዋል፣ '+ab+' ቀርተዋል'+(exc?'፣ '+exc+' በፈቃድ':'')); };
+window.ggAttEdit=function(id){ const a=state.attendance.find(x=>x.id===id); if(!a) return; attTemp={}; (a.records||[]).forEach(r=>{ attTemp[r.studentId]=r.status; }); attEditId=id; $('attDate').value=a.date; $('attClass').value=(a.class==='ሁሉም'?'':a.class); renderAttendance(); window.scrollTo({top:0,behavior:'smooth'}); showToast('እያስተካከሉ ነው — ካበቁ "መዝግብ" ይጫኑ'); };
+window.ggAttPrint=function(id){ const a=state.attendance.find(x=>x.id===id); if(!a) return; const L={present:'ተገኝቷል',late:'ዘግይቷል',excused:'ፈቃድ',absent:'ቀርቷል'};
+  const w=window.open('','_blank'); if(!w) return; w.document.write('<html><head><meta charset="utf-8"><title>አቴንዳንስ</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:5px 8px;font-size:13px}th{background:#e8f0ea}</style></head><body><h2>የግቢ ጉባኤ — አቴንዳንስ</h2><p>ቀን፦ '+esc(a.date)+' · ክፍል፦ '+esc(a.class)+'</p><table><tr><th>#</th><th>ስም</th><th>ሁኔታ</th></tr>'+(a.records||[]).map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(r.name)+'</td><td>'+(L[r.status]||'')+'</td></tr>').join('')+'</table><script>window.onload=function(){window.print()}<\/script></body></html>'); w.document.close(); };
+(function(){ const o=window.renderAttendance; window.renderAttendance=function(){ o.apply(this,arguments);
+  document.querySelectorAll('#attGrid .att-item').forEach(el=>{ const m=(el.getAttribute('onclick')||'').match(/'([^']+)'/); if(!m) return; const st=attTemp[m[1]]||''; el.className='att-item '+st; const ck=el.querySelector('.att-check'); if(ck){ ck.className='att-check '+({present:'p',absent:'a',late:'l',excused:'e'}[st]||''); ck.textContent={present:'✓',absent:'✗',late:'⏰',excused:'ፈ'}[st]||''; } });
+  if(!$('attLegend')){ const g=$('attGrid'); const p=document.createElement('p'); p.id='attLegend'; p.style.cssText='font-size:.78rem;color:var(--muted);margin:0 0 8px'; p.textContent='ተማሪን ሲጫኑ፦ ✓ ተገኝቷል → ⏰ ዘግይቷል → ፈ ፈቃድ → ✗ ቀርቷል'; g.parentNode.insertBefore(p,g); }
+  document.querySelectorAll('#attendanceHistory tbody tr').forEach(tr=>{ const b=tr.querySelector('button[onclick*="deleteAttendance"]'); if(!b||tr.querySelector('[data-ge]')) return; const id=(b.getAttribute('onclick').match(/'([^']+)'/)||[])[1]; const s=document.createElement('span'); s.setAttribute('data-ge','1'); s.innerHTML='<button class="btn btn-info btn-sm" onclick="ggAttEdit(\''+id+'\')">✏️</button> <button class="btn btn-ghost btn-sm" onclick="ggAttPrint(\''+id+'\')">🖨️</button> '; b.parentNode.insertBefore(s,b); });
+}; })();
 })();
 
 </script>
