@@ -4524,6 +4524,225 @@ window.renderDashboard=function(){
 
 try{ renderDashboard(); }catch(e){ console.error(e); }
 })();
+/* ===== ደኅንነትና አስተዳደር — ተቆጣጣሪ አካል፣ የደኅንነት ሁኔታ፣ የማከማቻ አቅም፣ የእንቅስቃሴ መዝገብ ===== */
+(function(){
+const $=id=>document.getElementById(id);
+const E=s=>esc(s==null?'':String(s));
+function ecF(t){ try{ const d=new Date(t||Date.now()); const e=gcToEc(d.getFullYear(),d.getMonth()+1,d.getDate()); return e.day+'/'+e.month+'/'+e.year; }catch(x){ return ''; } }
+function hm(t){ const d=new Date(t); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function hsz(b){ if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; if(b<1073741824) return (b/1048576).toFixed(1)+' MB'; return (b/1073741824).toFixed(2)+' GB'; }
+function log(key,detail){ try{ if(!Array.isArray(state.auditLog)) state.auditLog=[]; state.auditLog.push({t:Date.now(),k:key,d:String(detail||'').slice(0,80)}); if(state.auditLog.length>500) state.auditLog=state.auditLog.slice(-500); save(); }catch(e){} }
+window.ggLog=log;
+
+/* ---------- እንቅስቃሴን የሚመዘግቡ መጠቅለያዎች ---------- */
+function nm(o){ return o?(o.fullName||o.name||o.id||''):''; }
+function wrapAdd(fn,arr,key){ const f=window[fn]; if(typeof f!=='function') return; window[fn]=function(){ const n=(state[arr]||[]).length; const r=f.apply(this,arguments); try{ if((state[arr]||[]).length>n) log(key,nm(state[arr][state[arr].length-1])); }catch(e){} return r; }; }
+function wrapDel(fn,arr,key){ const f=window[fn]; if(typeof f!=='function') return; window[fn]=function(id){ const o=(state[arr]||[]).find(x=>x.id===id); const n=(state[arr]||[]).length; const r=f.apply(this,arguments); try{ if((state[arr]||[]).length<n) log(key,o?nm(o)||o.date||id:id); }catch(e){} return r; }; }
+function wrapEdit(fn,arr,key){ const f=window[fn]; if(typeof f!=='function') return; window[fn]=function(id){ const r=f.apply(this,arguments); try{ log(key,nm((state[arr]||[]).find(x=>x.id===id))||id); }catch(e){} return r; }; }
+wrapAdd('registerStudent','students','stu_add'); wrapEdit('saveEditStudent','students','stu_edit'); wrapDel('deleteStudent','students','stu_del');
+wrapAdd('registerTeacher','teachers','tch_add'); wrapDel('deleteTeacher','teachers','tch_del');
+wrapAdd('addMember','members','mem_add'); wrapDel('deleteMember','members','mem_del');
+wrapAdd('saveAttendance','attendance','att_add'); wrapDel('deleteAttendance','attendance','att_del'); wrapDel('deleteGrade','grades','grd_del');
+(function(){ const f=window.exportAllData; if(typeof f!=='function') return; window.exportAllData=function(){ const r=f.apply(this,arguments); state.lastBackupAt=Date.now(); log('backup',''); return r; }; })();
+(function(){ const f=window.ggOkSet; if(typeof f!=='function') return; window.ggOkSet=function(){ const r=f.apply(this,arguments); try{ state.lastCloudAt=Date.now(); save(); }catch(e){} return r; }; })();
+
+/* ---------- ገጽና ምናሌ ---------- */
+const old=$('page-admin'); if(old) old.remove();
+const page=document.createElement('div'); page.id='page-admin'; page.className='page';
+page.innerHTML='<h2 class="page-title">🛡️ <span>ደኅንነትና አስተዳደር</span></h2><p class="page-sub"><span>ሲስተሙን የሚቆጣጠረው አካል፣ የደኅንነት ሁኔታ፣ የማከማቻ አቅምና የእንቅስቃሴ መዝገብ።</span></p><div id="gsBody"></div>';
+const anchor=$('page-reports'); anchor.parentNode.insertBefore(page,anchor);
+if(!document.querySelector('.menu-item[onclick*="\'admin\'"]')){
+  const mi=document.createElement('div'); mi.className='menu-item'; mi.setAttribute('onclick',"showPage('admin',this)"); mi.innerHTML='<div class="menu-icon">🛡️</div> <span>ደኅንነትና አስተዳደር</span>';
+  const rm=[...document.querySelectorAll('.menu-item')].find(m=>(m.getAttribute('onclick')||'').includes("'reports'")); rm.parentNode.insertBefore(mi,rm);
+}
+const st=document.createElement('style'); st.textContent=`
+#gsBody .gs-card{background:#fff;border:1px solid #DDE8E0;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 8px 22px rgba(26,77,46,.07)}
+#gsBody h3{color:#1a4d2e;margin:0 0 10px;font-size:1.05rem}
+#gsBody .gs-big{font-size:2.2rem;font-weight:800}
+#gsBody .gs-bar{height:10px;border-radius:99px;background:#e6efe9;overflow:hidden;margin:8px 0}
+#gsBody .gs-bar i{display:block;height:100%;border-radius:99px}
+#gsBody .gs-ck{padding:7px 0;border-bottom:1px dashed #e3ece6;font-size:.9rem}
+#gsBody .gs-ck small{display:block;color:#6a7a70;margin-top:2px}
+#gsBody .gs-ctl{background:linear-gradient(135deg,#1a4d2e,#2c6e45);color:#fff;border-radius:16px;padding:14px 16px;margin-bottom:12px}
+#gsBody .gs-ctl b{font-size:1.1rem;color:#f3d77a;display:block}
+#gsBody .gs-note{background:#fff8e1;border-radius:12px;padding:10px;color:#6b5400;font-size:.85rem;margin:10px 0}
+#gsBody .gs-g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){#gsBody .gs-g2{grid-template-columns:1fr}}
+#gsBody .gs-lg{font-size:.85rem;padding:6px 0;border-bottom:1px solid #eef3ef;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+#gsBody .gs-lg em{color:#6a7a70;font-style:normal;font-size:.78rem;margin-left:auto}
+#gsBody .gs-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#gsBody .gs-stats div{background:#f3f8f4;border-radius:12px;padding:10px;text-align:center}
+#gsBody .gs-stats b{display:block;font-size:1.15rem;color:#1a4d2e}
+`; document.head.appendChild(st);
+
+const LBL={stu_add:'ተማሪ ተመዘገበ',stu_edit:'የተማሪ መረጃ ተስተካከለ',stu_del:'ተማሪ ተሰረዘ',tch_add:'መምህር ተመዘገበ',tch_del:'መምህር ተሰረዘ',mem_add:'አባል ተጨመረ',mem_del:'አባል ተሰረዘ',att_add:'የአቴንዳንስ መዝገብ ተቀመጠ',att_del:'የአቴንዳንስ መዝገብ ተሰረዘ',grd_del:'የውጤት መዝገብ ተሰረዘ',backup:'ሙሉ ውሂብ ወረደ (ምትኬ)',ctl:'ተቆጣጣሪ አካል ተቀየረ'};
+
+/* ---------- ሁኔታ ማረጋገጫዎች ---------- */
+let persisted=null; try{ if(navigator.storage&&navigator.storage.persisted) navigator.storage.persisted().then(v=>{ persisted=v; }); }catch(e){}
+function checks(){
+  const cfg=ggCfg(); const age=state.lastBackupAt?(Date.now()-state.lastBackupAt)/864e5:null; const cage=state.lastCloudAt?(Date.now()-state.lastCloudAt)/864e5:null;
+  const best=[age,cage].filter(x=>x!==null).sort((a,b)=>a-b)[0];
+  return [
+    {ok:(function(){ try{ return !!JSON.parse(localStorage.getItem('gg_lock_v1')||'null'); }catch(e){ return false; } })(),t:'መተግበሪያው ሲከፈት የይለፍ ቃል ይጠየቃል',f:'የመተግበሪያ መቆለፊያን ከቅንብሮች ያብሩ።'},
+    {ok:!!(state.controller&&state.controller.name),t:'ሲስተሙን የሚቆጣጠር አካል ተለይቷል',f:'ከታች ባለው ካርድ ያስገቡ።'},
+    {ok:!!cfg.url,t:'የክላውድ (Google Drive) ምትኬ ሊንክ ተቀምጧል',f:'በቅንብሮች የስክሪፕት ሊንክ ያስገቡ።'},
+    {ok:!!cfg.auto,t:'ራስ-ሰር ምትኬ በርቷል',f:'በቅንብሮች ራስ-ሰር ምትኬን ያብሩ።'},
+    {ok:best!==undefined&&best!==null&&best<=7,t:'ምትኬ ባለፉት 7 ቀናት ውስጥ ተወስዷል',f:'ሙሉ ውሂብ አውርዱ ወይም የክላውድ ምትኬ ይላኩ።'},
+    {ok:persisted===true,t:'ማከማቻው ቋሚ ሆኖ ተጠብቋል (አሳሹ አያጸዳውም)',f:'ከታች «ማከማቻን ቋሚ አድርግ» ይጫኑ።'},
+    {ok:!!window.isSecureContext&&location.protocol!=='http:',t:'በተመሰጠረ ግንኙነት (HTTPS) ተከፍቷል',f:'ከ https ሊንክ ብቻ ይክፈቱ።'}
+  ];
+}
+function secCard(){
+  const ck=checks(), ok=ck.filter(c=>c.ok).length, pc=Math.round(ok/ck.length*100);
+  const lv=pc>=85?['ከፍተኛ','#2E7D4F']:pc>=60?['መካከለኛ','#A6791F']:['ዝቅተኛ','#B3261E'];
+  return '<div class="gs-card"><h3>🛡️ <span>የደኅንነት ሁኔታ</span></h3><div style="display:flex;align-items:center;gap:14px"><div class="gs-big" style="color:'+lv[1]+'">'+pc+'%</div><div><b style="color:'+lv[1]+'"><span>'+lv[0]+'</span></b><div style="font-size:.8rem;color:#6a7a70">'+ok+'/'+ck.length+' <span>ተሟልቷል</span></div></div></div>'+
+   '<div class="gs-bar"><i style="width:'+pc+'%;background:'+lv[1]+'"></i></div>'+
+   ck.map(c=>'<div class="gs-ck">'+(c.ok?'✅':'⚠️')+' <span>'+c.t+'</span>'+(c.ok?'':'<small>→ <span>'+c.f+'</span></small>')+'</div>').join('')+
+   '<div class="gs-note">⚠️ <span>ሐቀኛ ገደብ፦ መረጃው በዚህ መሣሪያ አሳሽ ውስጥ ይቀመጣል። ስልኩን በስክሪን ቁልፍ ይጠብቁ፤ ለአደጋ መመለሻ የክላውድ ወይም የፋይል ምትኬ ብቻ ይተማመኑ። ይህ መተግበሪያ ሕዝባዊ ድር ጣቢያ ስለሆነ ምሥጢራዊ ቁልፍ በውስጡ አይቀመጥም።</span></div></div>';
+}
+function ctlCard(){
+  const c=state.controller||{};
+  return '<div class="gs-card"><h3>👤 <span>ሲስተሙን የሚቆጣጠር አካል</span></h3>'+
+   (c.name?'<div class="gs-ctl"><b>'+E(c.name)+'</b><div style="font-size:.85rem;opacity:.9">'+E(c.title||'')+(c.phone?' · 📞 '+E(c.phone):'')+(c.email?' · ✉️ '+E(c.email):'')+'</div>'+(c.since?'<div style="font-size:.8rem;opacity:.8"><span>የተሾመበት</span>: '+E(c.since)+'</div>':'')+(c.scope?'<div style="font-size:.8rem;opacity:.85;margin-top:4px">'+E(c.scope)+'</div>':'')+'</div>'
+     :'<div class="gs-note">⚠️ <span>ሲስተሙን በኃላፊነት የሚቆጣጠር አካል ገና አልተለየም። ከታች ያስገቡ።</span></div>')+
+   '<div class="gs-g2"><div class="form-field"><label><span>ሙሉ ስም</span></label><input type="text" id="gsName" maxlength="80" value="'+E(c.name)+'"></div><div class="form-field"><label><span>ኃላፊነት / የሥራ ድርሻ</span></label><input type="text" id="gsTitle" maxlength="80" value="'+E(c.title)+'"></div>'+
+   '<div class="form-field"><label><span>ስልክ</span></label><input type="tel" id="gsPhone" maxlength="20" value="'+E(c.phone)+'"></div><div class="form-field"><label><span>ኢሜይል</span></label><input type="email" id="gsMail" maxlength="80" value="'+E(c.email)+'"></div>'+
+   '<div class="form-field"><label><span>የተሾመበት ቀን (ዓ.ም.)</span></label><input type="text" id="gsSince" maxlength="20" value="'+E(c.since)+'"></div><div class="form-field"><label><span>የሥልጣን ወሰን</span></label><input type="text" id="gsScope" maxlength="200" value="'+E(c.scope)+'"></div></div>'+
+   '<button class="btn btn-primary" id="gsSave">💾 <span>አስቀምጥ</span></button></div>';
+}
+function logCard(){
+  const L=(state.auditLog||[]).slice(-40).reverse();
+  return '<div class="gs-card"><h3>📜 <span>የእንቅስቃሴ መዝገብ</span></h3>'+
+   (L.length?L.map(e=>'<div class="gs-lg"><b><span>'+(LBL[e.k]||'እንቅስቃሴ')+'</span></b>'+(e.d?'<span style="color:#333">'+E(e.d)+'</span>':'')+'<em>'+ecF(e.t)+' · '+hm(e.t)+'</em></div>').join(''):'<p style="font-size:.88rem;color:#6a7a70"><span>እስካሁን የተመዘገበ እንቅስቃሴ የለም።</span></p>')+
+   '<div class="gs-note">ℹ️ <span>ይህ መዝገብ በዚህ መሣሪያ ላይ ብቻ ይቀመጣል (እስከ 500 እንቅስቃሴ)። የአሳሽ መረጃ ከጸዳ ይጠፋል፤ ስለዚህ ፍጹም ማስረጃ አይደለም።</span></div>'+
+   '<button class="btn btn-ghost btn-sm" id="gsLogDl">⬇️ <span>መዝገቡን አውርድ</span></button></div>';
+}
+function capHtml(used,quota,dataBytes){
+  const free=Math.max(0,quota-used), pc=quota?Math.min(100,Math.max(1,Math.round(used/quota*100))):1;
+  return '<h3>📦 <span>የማከማቻ አቅም</span></h3><div class="gs-stats"><div><b>'+hsz(dataBytes)+'</b><span>የመተግበሪያው ውሂብ</span></div><div><b>'+(quota?hsz(free):'—')+'</b><span>ቀሪ ቦታ</span></div><div><b>'+(state.members||[]).filter(m=>m.photo).length+'</b><span>የፎቶ ብዛት</span></div></div>'+
+   '<div class="gs-bar"><i style="width:'+pc+'%;background:'+(pc>80?'#B3261E':'#2E7D4F')+'"></i></div><div style="font-size:.8rem;color:#6a7a70">'+hsz(used)+' / '+(quota?hsz(quota):'—')+' ('+pc+'%)</div>'+
+   '<div class="gs-note">ℹ️ <span>ጊዜ (ዓመታት) ማከማቻውን አይገድበውም፤ ገደቡ የመሣሪያው ነጻ ቦታ ነው። ለረጅም ጊዜ ቅጂ በየጊዜው ምትኬ ያውርዱ።</span></div>'+
+   (persisted?'':'<button class="btn btn-gold btn-sm" id="gsPersist">🔐 <span>ማከማቻን ቋሚ አድርግ</span></button>');
+}
+function recCard(){ const on=!!localStorage.getItem(LKK), has=!!localStorage.getItem(RECK); return '<div class="gs-card"><h3>🔑 <span>የይለፍ ቃል ማገገሚያ</span></h3><p style="font-size:.88rem">'+(on?(has?'✅ የማገገሚያ ኮድ አለ። አዲስ ከፈለጉ ከታች ይፍጠሩ።':'⚠️ ገና የማገገሚያ ኮድ የለም። የይለፍ ቃል ቢረሱ ይህ ያድንዎታል።'):'የመተግበሪያ መቆለፊያ አልበራም። ሲያበሩ እዚህ የማገገሚያ ኮድ ይፍጠሩ።')+'</p><button class="btn btn-gold" onclick="ggMakeRecCode()">🔑 <span>የማገገሚያ ኮድ ፍጠር</span></button></div>'; }
+function render(){
+  const b=$('gsBody'); if(!b) return;
+  b.innerHTML=ctlCard()+secCard()+recCard()+'<div class="gs-card" id="gsCap"><h3>📦 <span>የማከማቻ አቅም</span></h3>…</div>'+logCard();
+  $('gsSave').onclick=function(){
+    const g=i=>$(i).value.trim(); if(!g('gsName')){ showToast('ስም ያስገቡ','error'); return; }
+    state.controller={name:g('gsName'),title:g('gsTitle'),phone:g('gsPhone'),email:g('gsMail'),since:g('gsSince'),scope:g('gsScope'),at:ecF()};
+    log('ctl',state.controller.name); showToast('ተቀምጧል'); render();
+  };
+  $('gsLogDl').onclick=function(){ const bl=new Blob([JSON.stringify(state.auditLog||[],null,2)],{type:'application/json'}); const u=URL.createObjectURL(bl); const a=document.createElement('a'); a.href=u; a.download='gibi_audit_'+todayStr()+'.json'; a.click(); URL.revokeObjectURL(u); };
+  let db=0; try{ db=new Blob([JSON.stringify(state)]).size; }catch(e){}
+  const draw=(u,q)=>{ const c=$('gsCap'); if(!c) return; c.innerHTML=capHtml(u,q,db); const p=$('gsPersist'); if(p) p.onclick=async function(){ try{ persisted=await navigator.storage.persist(); showToast(persisted?'ማከማቻው ቋሚ ሆነ ✅':'አሳሹ አልፈቀደም','error'); }catch(e){} render(); }; };
+  try{ if(navigator.storage&&navigator.storage.estimate) navigator.storage.estimate().then(e=>draw(e.usage||0,e.quota||0),()=>draw(db,0)); else draw(db,0); }catch(e){ draw(db,0); }
+}
+window.ggAdminRender=render;
+const _sp=window.showPage; window.showPage=function(id,el){ const r=_sp.apply(this,arguments); if(id==='admin'){ try{ render(); }catch(e){ console.error(e); } } return r; };
+
+
+/* ---------- የይለፍ ቃል ረሳሁ — ማገገሚያ ---------- */
+const LKK='gg_lock_v1', RECK='gg_lock_rec_v1', REQK='gg_lock_req_v1', WAIT=24*3600*1000;
+async function sha(t){ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('gg-rec|'+t)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+const ncode=t=>String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r=crypto.getRandomValues(new Uint8Array(16)); let o=''; r.forEach((x,i)=>{ o+=A[x%A.length]; if(i%4===3&&i<15) o+='-'; }); return o; }
+function unlockNow(){ try{ localStorage.removeItem(LKK); localStorage.removeItem(REQK); sessionStorage.setItem('gg_unlocked','1'); }catch(e){} const ov=$('ggLockOv'); if(ov) ov.remove(); }
+function forgotUI(ov){
+  const card=ov.firstElementChild; if(!card||card.querySelector('#ggForgotBtn')) return;
+  const b=document.createElement('button'); b.id='ggForgotBtn'; b.type='button'; b.style.cssText='background:none;border:0;color:#1a4d2e;text-decoration:underline;margin-top:12px;font-size:.88rem;cursor:pointer'; b.textContent='🔑 የይለፍ ቃል ረሳሁ'; card.appendChild(b);
+  b.onclick=function(){
+    const req=+localStorage.getItem(REQK)||0, left=req?req+WAIT-Date.now():0, hasRec=!!localStorage.getItem(RECK);
+    card.innerHTML='<div style="font-size:2rem;color:#c9a227">🔑</div><h3 style="color:#1a4d2e;margin:6px 0">የይለፍ ቃል ማገገም</h3>'+
+     (hasRec?'<p style="font-size:.85rem">አማራጭ 1፦ ቀደም ብለው የያዙትን <b>የማገገሚያ ኮድ</b> ያስገቡ።</p><input id="ggRcIn" placeholder="XXXX-XXXX-XXXX-XXXX" style="width:100%;padding:10px;border:1px solid #cdd;border-radius:10px;text-align:center;letter-spacing:1px"><button id="ggRcGo" class="btn btn-primary" style="margin-top:8px;width:100%">ኮዱን አረጋግጥ</button><p id="ggRcMsg" style="color:#b3261e;font-size:.82rem;min-height:1.2em"></p><hr style="border:0;border-top:1px solid #e3ece6">':'')+
+     '<p style="font-size:.85rem">'+(hasRec?'አማራጭ 2፦ ':'')+'ኮድ ከሌለ፦ ጥያቄ ያስገቡ፤ ከ<b>24 ሰዓት</b> በኋላ መቆለፊያው ይጠፋል (ውሂብዎ አይጠፋም)። በዚህ ጊዜ የሌላ ሰው ሙከራ ለማስቆም ነው።</p>'+
+     (!req?'<button id="ggRqGo" class="btn btn-gold" style="width:100%">⏳ የ24 ሰዓት ጥያቄ አስገባ</button>':
+        left>0?'<div style="background:#fff8e1;border-radius:10px;padding:10px;font-size:.88rem">ጥያቄ ገብቷል። ቀሪ ጊዜ፦ <b>'+Math.floor(left/3600000)+' ሰዓት '+Math.floor(left%3600000/60000)+' ደቂቃ</b></div><button id="ggRqCancel" class="btn btn-ghost btn-sm" style="margin-top:8px">ጥያቄውን ሰርዝ</button>':
+        '<button id="ggRqDone" class="btn btn-danger" style="width:100%">🔓 መቆለፊያውን አጥፋ</button>')+
+     '<p style="font-size:.78rem;color:#6a7a70;margin-top:10px">ወዲያውኑ ለማግኘት፦ ውሂቡ በክላውድ ምትኬ ካለ፣ የአሳሹን የድር ጣቢያ መረጃ አጽድተው ከመግቢያው «መልሶ አምጣ» ይጠቀሙ።</p><button id="ggRcBack" class="btn btn-ghost btn-sm">← ተመለስ</button>';
+    const g=i=>card.querySelector('#'+i);
+    if(g('ggRcBack')) g('ggRcBack').onclick=()=>{ ov.remove(); try{ showLock(); }catch(e){ location.reload(); } };
+    if(g('ggRcGo')) g('ggRcGo').onclick=async function(){ const h=await sha(ncode(g('ggRcIn').value)); if(h===localStorage.getItem(RECK)){ log('lkrec',''); unlockNow(); showToast('መቆለፊያው ጠፍቷል — አዲስ ያብሩ'); } else g('ggRcMsg').textContent='ኮዱ ትክክል አይደለም'; };
+    if(g('ggRqGo')) g('ggRqGo').onclick=function(){ localStorage.setItem(REQK,String(Date.now())); log('lkreq',''); b.onclick(); };
+    if(g('ggRqCancel')) g('ggRqCancel').onclick=function(){ localStorage.removeItem(REQK); b.onclick(); };
+    if(g('ggRqDone')) g('ggRqDone').onclick=function(){ log('lkreset',''); unlockNow(); showToast('መቆለፊያው ጠፍቷል — አዲስ ያብሩ'); };
+  };
+}
+function watchLock(){ const ov=$('ggLockOv'); if(ov) forgotUI(ov); }
+new MutationObserver(watchLock).observe(document.body,{childList:true}); watchLock();
+LBL.lkrec='በማገገሚያ ኮድ መቆለፊያ ጠፋ'; LBL.lkreq='የመቆለፊያ ማገገሚያ ጥያቄ ገባ'; LBL.lkreset='መቆለፊያ ከ24 ሰዓት በኋላ ጠፋ'; LBL.lkcode='የማገገሚያ ኮድ ተፈጠረ';
+window.ggMakeRecCode=async function(){
+  if(!localStorage.getItem(LKK)){ showToast('መጀመሪያ የመተግበሪያ መቆለፊያ ያብሩ','error'); return; }
+  const c=genCode(); localStorage.setItem(RECK,await sha(ncode(c))); log('lkcode','');
+  showModal('🔑 የማገገሚያ ኮድ','<p style="font-size:.88rem">ይህን ኮድ <b>አሁን በወረቀት ይጻፉ</b> ወይም ፎቶ ያንሱ። ከዚህ በኋላ አይታይም፤ አዲስ ሲፈጥሩ አሮጌው ይሰረዛል።</p><div style="font-size:1.5rem;font-weight:800;letter-spacing:2px;text-align:center;background:#f3f8f4;border-radius:12px;padding:16px;color:#1a4d2e;user-select:all">'+c+'</div>');
+  render();
+};
+
+/* ---------- ትርጉም ---------- */
+(function(){
+  if(typeof GG_TR==='undefined') return;
+  const D={
+"ደኅንነትና አስተዳደር":["Security & Administration","Nageenyaa fi Bulchiinsa","ድሕንነትን ምሕደራን"],
+"ሲስተሙን የሚቆጣጠረው አካል፣ የደኅንነት ሁኔታ፣ የማከማቻ አቅምና የእንቅስቃሴ መዝገብ።":["The system controller, security status, storage capacity and activity log.","Qaama sirna to'atu, haala nageenyaa, dandeettii kuusaa fi galmee sochii.","ነቲ ስርዓት ዝቆጻጸር ኣካል፣ ኩነታት ድሕንነት፣ ዓቕሚ ማዕከን ተግባራት መዝገብ።"],
+"የደኅንነት ሁኔታ":["Security status","Haala nageenyaa","ኩነታት ድሕንነት"],
+"ተሟልቷል":["complete","guutameera","ተማልኢዋ"],
+"ከፍተኛ":["High","Olaanaa","ላዕለዋይ"],"መካከለኛ":["Medium","Giddugaleessa","ማእከላይ"],"ዝቅተኛ":["Low","Gad-aanaa","ታሕተዋይ"],
+"መተግበሪያው ሲከፈት የይለፍ ቃል ይጠየቃል":["A password is required to open the app","Appiin yeroo banamu jecha iccitii gaafata","መተግበሪያ ክኽፈት ከሎ ቃል-ምስጢር ይሕተት"],
+"የመተግበሪያ መቆለፊያን ከቅንብሮች ያብሩ።":["Turn on App lock in settings.","Cufama appii qindaa'inaan banaa.","መቆለፊ መተግበሪያ ኣብ ቅጥዕታት ኣብርሁ።"],
+"ሲስተሙን የሚቆጣጠር አካል ተለይቷል":["A system controller has been identified","Qaamni sirna to'atu adda baafameera","ስርዓት ዝቆጻጸር ኣካል ተፈሊዩ ኣሎ"],
+"ከታች ባለው ካርድ ያስገቡ።":["Enter it in the card below.","Kaardii armaan gadii keessatti galchaa.","ኣብ ታሕቲ ዘሎ ካርድ የእትዉ።"],
+"የክላውድ (Google Drive) ምትኬ ሊንክ ተቀምጧል":["Cloud (Google Drive) backup link is set","Linkiin kuusaa duubaa Cloud (Google Drive) kaa'ameera","ሊንክ ክላውድ (Google Drive) ምትኬ ተቐሚጡ ኣሎ"],
+"በቅንብሮች የስክሪፕት ሊንክ ያስገቡ።":["Enter the script link in settings.","Qindaa'ina keessatti linkii istiriiptii galchaa.","ኣብ ቅጥዕታት ሊንክ ስክሪፕት የእትዉ።"],
+"ራስ-ሰር ምትኬ በርቷል":["Automatic backup is on","Kuusaan duubaa ofumaa ni hojjata","ባዕሉ ዝወስድ ምትኬ ተኸፊቱ ኣሎ"],
+"በቅንብሮች ራስ-ሰር ምትኬን ያብሩ።":["Turn on automatic backup in settings.","Qindaa'ina keessatti kuusaa duubaa ofumaa banaa.","ኣብ ቅጥዕታት ባዕሉ ዝወስድ ምትኬ ኣብርሁ።"],
+"ምትኬ ባለፉት 7 ቀናት ውስጥ ተወስዷል":["A backup was taken in the last 7 days","Kuusaan duubaa guyyoota 7 darban keessatti fudhatameera","ምትኬ ኣብዝሓለፉ 7 መዓልታት ተወሲዱ"],
+"ሙሉ ውሂብ አውርዱ ወይም የክላውድ ምትኬ ይላኩ።":["Download the full data or send a cloud backup.","Daataa guutuu buufadhaa yookaan kuusaa duubaa cloud ergaa.","ምሉእ ሓበሬታ ኣውርዱ ወይ ክላውድ ምትኬ ስደዱ።"],
+"ማከማቻው ቋሚ ሆኖ ተጠብቋል (አሳሹ አያጸዳውም)":["Storage is persistent (the browser will not clear it)","Kuusaan dhaabbataa ta'eera (birawuzarri hin balleessu)","ማዕከን ቀዋሚ ኮይኑ ተሓሊዩ (ብሮውዘር ኣይድምስሶን)"],
+"ከታች «ማከማቻን ቋሚ አድርግ» ይጫኑ።":["Press “Make storage persistent” below.","“Kuusaa dhaabbataa godhi” armaan gadii cuqaasaa.","ኣብ ታሕቲ «ማዕከን ቀዋሚ ግበር» ጠውቑ።"],
+"በተመሰጠረ ግንኙነት (HTTPS) ተከፍቷል":["Opened over an encrypted connection (HTTPS)","Walqunnamtii icciitiin (HTTPS) banameera","ብዝተመስጠረ ርክብ (HTTPS) ተኸፊቱ"],
+"ከ https ሊንክ ብቻ ይክፈቱ።":["Open only from the https link.","Linkii https qofaan banaa.","ካብ https ሊንክ ጥራይ ክፈቱ።"],
+"ሐቀኛ ገደብ፦ መረጃው በዚህ መሣሪያ አሳሽ ውስጥ ይቀመጣል። ስልኩን በስክሪን ቁልፍ ይጠብቁ፤ ለአደጋ መመለሻ የክላውድ ወይም የፋይል ምትኬ ብቻ ይተማመኑ። ይህ መተግበሪያ ሕዝባዊ ድር ጣቢያ ስለሆነ ምሥጢራዊ ቁልፍ በውስጡ አይቀመጥም።":["Honest limit: data is kept in this device's browser. Protect the phone with a screen lock and rely on a cloud or file backup for recovery. This app is a public website, so no secret key is stored in it.","Daangaa dhugaa: daataan birawuzara meeshaa kanaa keessa kuufama. Bilbila cufaa iskiriiniitiin eegaa; deebisanii argachuuf kuusaa duubaa cloud yookaan faayilii irratti hirkadhaa. Appiin kun marsariitii ummataa waan ta'eef furtuun icciitii keessa hin kaa'amu.","ሓቀኛ ደረት፦ ሓበሬታ ኣብዚ መሳሪያ ብሮውዘር ይተርፍ። ቴሌፎን ብመቆለፊ ስክሪን ሓልውዎ፤ ንምምላስ ክላውድ ወይ ፋይል ምትኬ ጥራይ ተኣማምኑ። እዚ መተግበሪ ህዝባዊ መርበብ ሓበሬታ ስለዝኾነ ምስጢራዊ ቁልፊ ኣብኡ ኣይቅመጥን።"],
+"ሲስተሙን የሚቆጣጠር አካል":["System controller","Qaama sirna to'atu","ስርዓት ዝቆጻጸር ኣካል"],
+"የተሾመበት":["Appointed","Kan muudame","ዝተሸመሉ"],
+"ሲስተሙን በኃላፊነት የሚቆጣጠር አካል ገና አልተለየም። ከታች ያስገቡ።":["No responsible controller has been identified yet. Enter one below.","Qaamni gaheen sirna to'atu ammallee hin adda baafamne. Gadiitti galchaa.","ኣብ ሓላፍነት ዝቆጻጸር ኣካል ገና ኣይተፈለየን። ኣብ ታሕቲ የእትዉ።"],
+"ኃላፊነት / የሥራ ድርሻ":["Role / Duty","Gahee / Hojii","ሓላፍነት / ግደ"],
+"ስልክ":["Phone","Bilbila","ስልኪ"],"ኢሜይል":["Email","Imeelii","ኢሜይል"],
+"የተሾመበት ቀን (ዓ.ም.)":["Appointed date (E.C.)","Guyyaa muudame (A.L.H.)","ዕለት ምሽማት (ዓ.ም.)"],
+"የሥልጣን ወሰን":["Scope of authority","Daangaa aangoo","ወሰን ስልጣን"],
+"አስቀምጥ":["Save","Olkaa'i","ኣቐምጥ"],
+"የእንቅስቃሴ መዝገብ":["Activity log","Galmee sochii","መዝገብ ንጥፈት"],
+"እስካሁን የተመዘገበ እንቅስቃሴ የለም።":["No activity recorded yet.","Hanga ammaatti sochiin galmaa'e hin jiru.","ክሳብ ሕጂ ዝተመዝገበ ንጥፈት የለን።"],
+"ይህ መዝገብ በዚህ መሣሪያ ላይ ብቻ ይቀመጣል (እስከ 500 እንቅስቃሴ)። የአሳሽ መረጃ ከጸዳ ይጠፋል፤ ስለዚህ ፍጹም ማስረጃ አይደለም።":["This log is kept only on this device (up to 500 entries). It disappears if browser data is cleared, so it is not absolute proof.","Galmeen kun meeshaa kana irra qofa kuufama (hanga sochii 500). Daataan birawuzaraa yoo haqame ni bada; kanaaf ragaa guutuu miti.","እዚ መዝገብ ኣብዚ መሳሪያ ጥራይ ይቕመጥ (ክሳብ 500 ንጥፈታት)። ሓበሬታ ብሮውዘር እንተተደምሲሱ ይጠፍእ፤ ስለዚ ምሉእ መርትዖ ኣይኮነን።"],
+"መዝገቡን አውርድ":["Download the log","Galmee buufadhu","መዝገብ ኣውርድ"],
+"ተማሪ ተመዘገበ":["Student registered","Barataan galmaa'e","ተማሃራይ ተመዝጊቡ"],
+"የተማሪ መረጃ ተስተካከለ":["Student info edited","Odeeffannoon barataa sirraa'e","ሓበሬታ ተማሃራይ ተመሓይሹ"],
+"ተማሪ ተሰረዘ":["Student deleted","Barataan haqame","ተማሃራይ ተደምሲሱ"],
+"መምህር ተመዘገበ":["Teacher registered","Barsiisaan galmaa'e","መምህር ተመዝጊቡ"],
+"መምህር ተሰረዘ":["Teacher deleted","Barsiisaan haqame","መምህር ተደምሲሱ"],
+"አባል ተጨመረ":["Member added","Miseensi dabalame","ኣባል ተወሲኹ"],
+"አባል ተሰረዘ":["Member deleted","Miseensi haqame","ኣባል ተደምሲሱ"],
+"የአቴንዳንስ መዝገብ ተቀመጠ":["Attendance record saved","Galmeen hirmaannaa olkaa'ame","መዝገብ ምርካብ ተቐሚጡ"],
+"የአቴንዳንስ መዝገብ ተሰረዘ":["Attendance record deleted","Galmeen hirmaannaa haqame","መዝገብ ምርካብ ተደምሲሱ"],
+"የውጤት መዝገብ ተሰረዘ":["Grade record deleted","Galmeen bu'aa haqame","መዝገብ ውጽኢት ተደምሲሱ"],
+"ሙሉ ውሂብ ወረደ (ምትኬ)":["Full data downloaded (backup)","Daataan guutuu buufame (kuusaa duubaa)","ምሉእ ሓበሬታ ወሪዱ (ምትኬ)"],
+"ተቆጣጣሪ አካል ተቀየረ":["Controller updated","Qaamni to'ataa jijjiirame","ተቖጻጻሪ ኣካል ተቐይሩ"],
+"እንቅስቃሴ":["Activity","Sochii","ንጥፈት"],
+"የማከማቻ አቅም":["Storage capacity","Dandeettii kuusaa","ዓቕሚ ማዕከን"],
+"የመተግበሪያው ውሂብ":["App data","Daataa appii","ሓበሬታ መተግበሪያ"],
+"ቀሪ ቦታ":["Free space","Iddoo hafe","ዝተረፈ ቦታ"],
+"የፎቶ ብዛት":["Photos","Baay'ina suuraa","ብዝሒ ስእሊ"],
+"ጊዜ (ዓመታት) ማከማቻውን አይገድበውም፤ ገደቡ የመሣሪያው ነጻ ቦታ ነው። ለረጅም ጊዜ ቅጂ በየጊዜው ምትኬ ያውርዱ።":["Time (years) does not limit storage; the limit is the device's free space. For long-term safety, download a backup regularly.","Yeroon (waggaan) kuusaa hin daangessu; daangaan iddoo meeshaa bilisaati. Kuusaa duubaa yeroo yeroon buufadhaa.","ግዜ (ዓመታት) ንማዕከን ኣይሓጽሮን፤ ደረቱ ነጻ ቦታ መሳሪያ እዩ። ንነዊሕ ግዜ ምትኬ ብተደጋጋሚ ኣውርዱ።"],
+"ማከማቻን ቋሚ አድርግ":["Make storage persistent","Kuusaa dhaabbataa godhi","ማዕከን ቀዋሚ ግበር"],
+"ማከማቻው ቋሚ ሆነ ✅":["Storage is now persistent ✅","Kuusaan dhaabbataa ta'e ✅","ማዕከን ቀዋሚ ኮይኑ ✅"],
+"አሳሹ አልፈቀደም":["The browser did not allow it","Birawuzarichi hin eeyyamne","ብሮውዘር ኣይፈቀደን"],
+"ስም ያስገቡ":["Enter a name","Maqaa galchaa","ስም የእትዉ"],
+"ተቀምጧል":["Saved","Olkaa'ameera","ተቐሚጡ"]
+  };
+  Object.keys(D).forEach(k=>{ if(!GG_TR[k]) GG_TR[k]=D[k]; });
+})();
+try{ if(typeof ggSetLang==='function'&&ggLang()!=='am') ggSetLang(ggLang()); }catch(e){}
+})();
+
 
 const GG_SEC={
 "የይለፍ ቃል":["Password","Jecha icciitii","መሕለፊ ቃል"],
