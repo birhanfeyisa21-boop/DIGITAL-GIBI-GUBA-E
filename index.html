@@ -3895,198 +3895,633 @@ const GG_EX={
 
 Object.assign(GG_TR,{"ደቂቃ":["min","daq.","ደቒቕ"]});
 (function(){ const re=/^[^\u1200-\u137F\w\d]+/; Object.keys(GG_TR).forEach(k=>{ const c=k.replace(re,'').trim(); if(c && c!==k && !GG_TR[c]) GG_TR[c]=GG_TR[k]; }); })();
-/* ===== ፈተና ሲስተም (ያለ አገልጋይ፣ በሊንክ) + አዲስ ዳሽቦርድ ===== */
+/* ===== ፈተና ሲስተም v2 (ያለ አገልጋይ፣ በሊንክ) + ዘመናዊ ዳሽቦርድ — አረንጓዴ + ወርቅ ===== */
 (function(){
 const $=id=>document.getElementById(id);
-const E=s=>esc(s==null?'':s);
+const E=s=>esc(s==null?'':String(s));
 function exs(){ if(!Array.isArray(state.exams)) state.exams=[]; if(!Array.isArray(state.examResults)) state.examResults=[]; }
-/* --- encoding --- */
-function b64(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
-function unb64(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return decodeURIComponent(escape(atob(s))); }
+function orgName(){ return (state.orgName||state.orgTitle||'ዲጂታል ግቢ ጉባኤ'); }
+
+/* ---------- ኮድ መስጫ (ከዚህ በፊት ከነበሩ ሊንኮች ጋር ይስማማል) ---------- */
+function norm(s){ return String(s==null?'':s).toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim(); }
+function hash(str){
+  function c(seed){
+    let h1=0xdeadbeef^seed, h2=0x41c6ce57^seed;
+    for(let i=0,ch;i<str.length;i++){ ch=str.charCodeAt(i); h1=Math.imul(h1^ch,2654435761); h2=Math.imul(h2^ch,1597334677); }
+    h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+    h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+    return (h2>>>0).toString(16).padStart(8,'0')+(h1>>>0).toString(16).padStart(8,'0');
+  }
+  return c(1)+c(7);
+}
+function b64u(bytes){ let s=''; for(let i=0;i<bytes.length;i+=8192) s+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64u(t){ t=t.replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t+='='; const b=atob(t), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+async function viaStream(bytes,T,fmt){ const s=new Blob([bytes]).stream().pipeThrough(new T(fmt)); return new Uint8Array(await new Response(s).arrayBuffer()); }
 async function pack(obj){
-  const json=JSON.stringify(obj);
-  try{
-    if(typeof CompressionStream==='function'){
-      const cs=new CompressionStream('deflate-raw'); const w=cs.writable.getWriter(); w.write(new TextEncoder().encode(json)); w.close();
-      const buf=new Uint8Array(await new Response(cs.readable).arrayBuffer());
-      let bin=''; buf.forEach(b=>bin+=String.fromCharCode(b));
-      return 'z'+btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-    }
-  }catch(e){}
-  return 'p'+b64(json);
+  const raw=new TextEncoder().encode(JSON.stringify(obj));
+  try{ if(typeof CompressionStream==='function') return 'z'+b64u(await viaStream(raw,CompressionStream,'deflate-raw')); }catch(e){}
+  return 'p'+b64u(raw);
 }
-async function unpack(s){
-  if(s[0]==='p') return JSON.parse(unb64(s.slice(1)));
-  let t=s.slice(1).replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t+='=';
-  const bin=atob(t), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
-  const ds=new DecompressionStream('deflate-raw'); const w=ds.writable.getWriter(); w.write(u); w.close();
-  return JSON.parse(new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()));
+async function unpack(t){
+  t=String(t||'').trim(); const kind=t.charAt(0), bytes=unb64u(t.slice(1));
+  if(kind==='p') return JSON.parse(new TextDecoder().decode(bytes));
+  if(kind==='z'){ if(typeof DecompressionStream!=='function') throw new Error('nosupport'); return JSON.parse(new TextDecoder().decode(await viaStream(bytes,DecompressionStream,'deflate-raw'))); }
+  throw new Error('bad');
 }
-/* --- styles --- */
+function fmtT(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), r=s%60; return m+':'+(r<10?'0':'')+r; }
+function copyTxt(txt,ok){
+  function fb(){ const t=document.createElement('textarea'); t.value=txt; t.style.cssText='position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); if(ok) ok(); }catch(_){} t.remove(); }
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>{ if(ok) ok(); },fb); else fb();
+}
+function baseUrl(){ return location.href.split('#')[0]; }
+const KIND={mc:'ምርጫ',tf:'እውነት / ሐሰት',sa:'አጭር መልስ'};
+const TF=['እውነት','ሐሰት'];
+
+/* ---------- ነጥብ አሰጣጥ (መምህሩ ወገን) ---------- */
+function qPts(q){ return Math.max(1,+q.p||1); }
+function okAns(q,a){
+  if(q.t==='sa'){ const n=norm(a); return !!n && (q.a||[]).some(x=>norm(x)===n); }
+  return a!==null&&a!==undefined&&a!==''&&Number(a)===Number(q.a);
+}
+function scoreOf(e,ans){
+  let score=0,max=0; const det=[];
+  e.qs.forEach((q,i)=>{ const p=qPts(q); max+=p; const ok=okAns(q,ans?ans[i]:null); if(ok) score+=p; det.push(ok); });
+  return {score,max,det};
+}
+function resOf(id){ exs(); return state.examResults.filter(r=>r.examId===id); }
+function pctOf(r){ return r.max?Math.round(r.score/r.max*100):0; }
+
+/* ---------- ዲዛይን ---------- */
 const st=document.createElement('style'); st.textContent=`
-.gx-hero{background:linear-gradient(135deg,#0f2e1c,#1a4d2e 60%,#2d7a4f);color:#fff;border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden;box-shadow:0 6px 18px rgba(26,77,46,.25)}
-.gx-hero h2{margin:0 0 4px;font-size:1.5rem;color:#fff}.gx-hero p{margin:0;color:#dce8df;font-size:.9rem}
-.gx-hero .gx-cross{position:absolute;right:18px;top:8px;font-size:4.2rem;color:#c9a227;opacity:.35;line-height:1}
-.gx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-.gx-stat{background:#fff;border:1px solid #e7dcae;border-radius:14px;padding:14px 12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-.gx-stat.g{background:linear-gradient(160deg,#1a4d2e,#2d7a4f);border-color:#1a4d2e;color:#fff}
-.gx-stat .n{font-size:1.9rem;font-weight:800;color:#1a4d2e;line-height:1.1}.gx-stat.g .n{color:#e6c757}
-.gx-stat .l{font-size:.8rem;margin-top:4px;color:#6b7c72;font-weight:700}.gx-stat.g .l{color:#dce8df}
+:root{--gx-g1:#0f2e1c;--gx-g2:#1a4d2e;--gx-g3:#2d7a4f;--gx-au:#c9a227;--gx-au2:#e6c757;--gx-cream:#fff8e1}
+/* hero */
+.gx-hero{background:linear-gradient(135deg,var(--gx-g1),var(--gx-g2) 55%,var(--gx-g3));color:#fff;border-radius:18px;padding:22px 24px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(26,77,46,.28)}
+.gx-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 88% 12%,rgba(230,199,87,.28),transparent 42%),repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 12px,transparent 12px 24px);pointer-events:none}
+.gx-hero>*{position:relative}
+.gx-hero h2{margin:0 0 4px;font-size:1.55rem;color:#fff;line-height:1.25}
+.gx-hero p{margin:0;color:#dce8df;font-size:.92rem}
+.gx-hero .gx-cross{position:absolute;right:16px;top:6px;font-size:4.6rem;color:var(--gx-au);opacity:.38;line-height:1}
+.gx-date{display:inline-flex;gap:8px;align-items:center;margin-top:12px;background:rgba(255,255,255,.12);border:1px solid rgba(230,199,87,.5);border-radius:99px;padding:5px 14px;font-weight:700;font-size:.85rem;color:var(--gx-au2)}
+.gx-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.gx-pill{background:rgba(255,255,255,.13);border-radius:99px;padding:4px 12px;font-size:.8rem;color:#fff}
+.gx-pill b{color:var(--gx-au2)}
+/* KPI */
+.gx-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:760px){.gx-kpis{grid-template-columns:repeat(2,1fr)}}
+.gx-kpi{background:#fff;border:1px solid #ead9a0;border-radius:16px;padding:14px;display:flex;gap:12px;align-items:center;box-shadow:0 2px 10px rgba(26,77,46,.07);transition:transform .15s,box-shadow .15s}
+.gx-kpi:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(26,77,46,.14)}
+.gx-kpi .ic{flex:0 0 42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;background:var(--gx-cream);border:1px solid #ecd48a}
+.gx-kpi .n{font-size:1.55rem;font-weight:800;color:var(--gx-g2);line-height:1.1}
+.gx-kpi .l{font-size:.76rem;color:#6b7c72;font-weight:700;margin-top:2px}
+.gx-kpi.g{background:linear-gradient(150deg,var(--gx-g2),var(--gx-g3));border-color:var(--gx-g2)}
+.gx-kpi.g .ic{background:rgba(255,255,255,.16);border-color:rgba(230,199,87,.55)}
+.gx-kpi.g .n{color:var(--gx-au2)}.gx-kpi.g .l{color:#dce8df}
+/* panels */
+.gx-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px}
+.gx-panel{background:#fff;border:1px solid #d9e2db;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(26,77,46,.06)}
+.gx-panel h3{margin:0 0 10px;font-size:1rem;color:var(--gx-g2);display:flex;gap:6px;align-items:center}
+.gx-ring{display:flex;align-items:center;gap:14px}
+.gx-ring svg{flex:0 0 96px;width:96px;height:96px}
+.gx-ring .bg{fill:none;stroke:#eef3ef;stroke-width:11}.gx-ring .fg{fill:none;stroke:var(--gx-au);stroke-width:11;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+.gx-ring .fg.g{stroke:var(--gx-g3)}
+.gx-ring text{font-weight:800;fill:var(--gx-g2);font-size:22px}
+.gx-ring .lg{font-size:.82rem;color:#4b5b51;line-height:1.7}.gx-ring .lg b{color:var(--gx-g2)}
+.gx-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.gx-act{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.gx-act button{border:1px solid #ead9a0;background:var(--gx-cream);color:var(--gx-g2);border-radius:14px;padding:12px 8px;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center;font-family:inherit;transition:background .15s,transform .15s}
+.gx-act button span{font-size:1.5rem;line-height:1}
+.gx-act button:hover{background:#fff0b8;transform:translateY(-2px)}
 .gx-bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.82rem}.gx-bar .t{flex:0 0 38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gx-bar .b{flex:1;background:#eef3ef;border-radius:99px;height:12px;overflow:hidden}.gx-bar .b i{display:block;height:100%;background:linear-gradient(90deg,#c9a227,#e6c757);border-radius:99px}
-.gx-bar .v{flex:0 0 42px;text-align:right;font-weight:800;color:#1a4d2e}
-.gx-q{background:#f8fbf9;border:1px solid #d9e2db;border-radius:12px;padding:12px 14px;margin:10px 0}
-.gx-q b{color:#1a4d2e}.gx-opt{display:block;padding:8px 10px;margin:5px 0;border:1px solid #d9e2db;border-radius:8px;background:#fff;cursor:pointer}
-.gx-opt input{margin-right:8px}.gx-opt:has(input:checked){border-color:#c9a227;background:#fff8dc}
-.gx-take{position:fixed;inset:0;z-index:9999;background:#f0f4f8;overflow:auto;padding:14px}
-.gx-take .gx-in{max-width:760px;margin:0 auto}
-.gx-timer{position:sticky;top:0;background:#1a4d2e;color:#e6c757;padding:8px 14px;border-radius:10px;font-weight:800;text-align:center;margin-bottom:10px;z-index:2}
-.gx-code{width:100%;font-family:monospace;font-size:.75rem;min-height:70px}
+.gx-bar .b{flex:1;background:#eef3ef;border-radius:99px;height:12px;overflow:hidden}.gx-bar .b i{display:block;height:100%;background:linear-gradient(90deg,var(--gx-au),var(--gx-au2));border-radius:99px}
+.gx-bar .b i.bad{background:linear-gradient(90deg,#b83b3b,#d96a6a)}.gx-bar .b i.ok{background:linear-gradient(90deg,var(--gx-g3),#5aa57a)}
+.gx-bar .v{flex:0 0 52px;text-align:right;font-weight:800;color:var(--gx-g2)}
+.gx-lb{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed #d9e2db;font-size:.86rem}
+.gx-lb:last-child{border:none}.gx-lb .m{flex:0 0 26px;font-size:1.1rem;text-align:center}.gx-lb .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gx-lb .sc{font-weight:800;color:var(--gx-g2)}
+.gx-empty{padding:16px;text-align:center;color:#6b7c72;font-size:.88rem}
+/* exam admin */
 .gx-chip{display:inline-block;background:#fff4d6;border:1px solid #ecd48a;border-radius:99px;padding:2px 10px;font-size:.75rem;margin:0 4px 4px 0}
+.gx-chip.g{background:#e6f2ea;border-color:#b9d8c4;color:var(--gx-g2)}
+.gx-ex{background:#fff;border:1px solid #d9e2db;border-left:5px solid var(--gx-au);border-radius:14px;padding:14px;margin:10px 0}
+.gx-ex-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.gx-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.gx-pan{background:#f8fbf9;border:1px solid #d9e2db;border-radius:12px;padding:12px;margin-top:10px}
+.gx-pan textarea{width:100%;font-family:monospace;font-size:.75rem;min-height:70px;margin:6px 0}
+.gx-q{background:#f8fbf9;border:1px solid #d9e2db;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.gx-q .qa{display:flex;gap:4px;flex-shrink:0}
+.gx-seg{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.gx-seg button{border:1px solid #d9e2db;background:#fff;border-radius:99px;padding:6px 14px;font-weight:700;cursor:pointer;font-family:inherit;color:#4b5b51}
+.gx-seg button.on{background:var(--gx-g2);color:var(--gx-au2);border-color:var(--gx-g2)}
+.gx-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:10px 0}
+.gx-mode{border:2px solid #d9e2db;border-radius:12px;padding:10px 12px;cursor:pointer;display:block}
+.gx-mode input{display:none}.gx-mode b{display:block;color:var(--gx-g2)}.gx-mode span{font-size:.78rem;color:#6b7c72}
+.gx-mode.on{border-color:var(--gx-au);background:var(--gx-cream)}
+.gx-opt-row{display:flex;gap:8px;align-items:center;margin:5px 0}.gx-opt-row .ol{font-weight:800;color:var(--gx-g2);flex:0 0 18px}.gx-opt-row input[type=text]{flex:1}
+.gx-err{display:none;color:#b83b3b;font-weight:700;font-size:.85rem;margin:6px 0}
+.gx-pct{display:inline-block;border-radius:99px;padding:1px 9px;font-weight:800;font-size:.78rem}.gx-pct.ok{background:#e1f3e7;color:#1f6a3f}.gx-pct.bad{background:#fbe5e5;color:#9a2b2b}
+.gx-tbl{width:100%;border-collapse:collapse;font-size:.85rem}.gx-tbl th,.gx-tbl td{padding:7px 8px;border-bottom:1px solid #e3ebe5;text-align:left}.gx-tbl th{background:#f1f6f2;color:var(--gx-g2)}
+.gx-pq{display:grid;grid-template-columns:1fr;gap:2px;margin:8px 0}
+/* ተመዛኝ (learner) */
+.gxs{position:fixed;inset:0;z-index:99999;background:linear-gradient(180deg,#0f2e1c 0,#1a4d2e 190px,#f0f4f8 190px);overflow:auto;padding:14px 12px 40px;font-family:inherit}
+.gxs-w{max-width:680px;margin:0 auto}
+.gxs-top{display:flex;align-items:center;gap:12px;color:#fff;margin:4px 0 14px}
+.gxs-logo{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(230,199,87,.6);display:grid;place-items:center;font-size:1.6rem;color:var(--gx-au2)}
+.gxs-sch{font-weight:800;font-size:1.05rem}.gxs-sub{font-size:.8rem;color:#cfe0d4}
+.gxs-card{background:#fff;border-radius:18px;padding:18px;margin-bottom:12px;box-shadow:0 8px 24px rgba(15,46,28,.14)}
+.gxs-card h1{font-size:1.35rem;margin:0 0 6px;color:var(--gx-g2)}.gxs-by{color:#6b7c72;margin:0 0 8px;font-size:.9rem}
+.gxs-chips span{display:inline-block;background:var(--gx-cream);border:1px solid #ecd48a;border-radius:99px;padding:3px 11px;font-size:.78rem;margin:0 5px 5px 0}
+.gxs-f{margin:12px 0}.gxs-f label{display:block;font-weight:700;margin-bottom:4px;color:#33443a;font-size:.9rem}
+.gxs-f input,.gxs-sa{width:100%;padding:12px;border:1.5px solid #cdd9d0;border-radius:12px;font-size:1rem;font-family:inherit}
+.gxs-f input:focus,.gxs-sa:focus{outline:none;border-color:var(--gx-au);box-shadow:0 0 0 3px rgba(201,162,39,.2)}
+.gxs-rules{margin:10px 0 4px 18px;color:#4b5b51;font-size:.85rem;line-height:1.7}
+.gxs-go{width:100%;border:none;border-radius:14px;padding:14px;font-size:1.05rem;font-weight:800;background:linear-gradient(135deg,var(--gx-au),var(--gx-au2));color:var(--gx-g1);cursor:pointer;font-family:inherit}
+.gxs-go.fin{background:linear-gradient(135deg,var(--gx-g2),var(--gx-g3));color:#fff}
+.gxs-ghost{border:1.5px solid #cdd9d0;background:#fff;color:var(--gx-g2);border-radius:14px;padding:12px 16px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;text-align:center}
+.gxs-ghost:disabled{opacity:.4}.gxs-full{width:100%}
+.gxs-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.gxs-prog{flex:1;height:10px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden}.gxs-prog i{display:block;height:100%;background:var(--gx-au2);border-radius:99px;transition:width .25s}
+.gxs-cnt,.gxs-tm{color:#fff;font-weight:800;font-size:.9rem}.gxs-tm.low{color:#ffb4b4;animation:gxp 1s infinite}@keyframes gxp{50%{opacity:.5}}
+.gxs-qh{display:flex;justify-content:space-between;margin-bottom:8px}.gxs-badge{background:#e6f2ea;color:var(--gx-g2);border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:800}.gxs-pt{color:#6b7c72;font-size:.78rem}
+.gxs-q{font-size:1.15rem;margin:4px 0 14px;color:#1e2a22;line-height:1.5}
+.gxs-opt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:2px solid #d9e2db;background:#fff;border-radius:14px;padding:12px;margin:8px 0;font-size:1rem;cursor:pointer;font-family:inherit;color:#1e2a22}
+.gxs-opt .ol{flex:0 0 32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#eef3ef;font-weight:800;color:var(--gx-g2)}
+.gxs-opt.on{border-color:var(--gx-au);background:var(--gx-cream)}.gxs-opt.on .ol{background:var(--gx-au);color:#fff}
+.gxs-nav{display:flex;gap:10px;margin:6px 0 12px}.gxs-nav .gxs-go{flex:1}
+.gxs-dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.gxs-dot{width:34px;height:34px;border-radius:50%;border:1.5px solid #cdd9d0;background:#fff;font-weight:700;cursor:pointer;font-family:inherit;color:#4b5b51}
+.gxs-dot.ans{background:#e6f2ea;border-color:var(--gx-g3);color:var(--gx-g2)}.gxs-dot.cur{background:var(--gx-g2);color:#fff;border-color:var(--gx-g2)}
+.gxs-res{text-align:center}.gxs-ring{width:150px;height:150px}.gxs-ring .bg{fill:none;stroke:#eef3ef;stroke-width:10}.gxs-ring .fg{fill:none;stroke:var(--gx-au);stroke-width:10;stroke-linecap:round;transform:rotate(-90deg);transform-origin:60px 60px}
+.gxs-ring .n{font-size:28px;font-weight:800;fill:var(--gx-g2)}.gxs-ring .s{font-size:12px;fill:#6b7c72}
+.gxs-msg{font-weight:800;color:var(--gx-g2);margin:6px 0}.gxs-big{font-size:3rem}
+.gxs-rv{padding:9px 10px;border-radius:10px;margin:6px 0;font-size:.9rem;border:1px solid #e3ebe5}.gxs-rv.ok{background:#f1faf4;border-color:#bfe0c9}.gxs-rv.bad{background:#fdf1f1;border-color:#efc4c4}
+.gxs-rv .meta{font-size:.8rem;color:#6b7c72;margin-top:3px}
+.gxs-code textarea{width:100%;min-height:76px;font-family:monospace;font-size:.72rem;margin:6px 0}.gxs-row{display:flex;gap:8px;flex-wrap:wrap}.gxs-row>*{flex:1}
+.gxs-note{background:#e6f2ea;border-radius:12px;padding:10px;margin:10px 0;color:var(--gx-g2);font-weight:700;font-size:.88rem}
+.gxs-er{display:none;color:#b83b3b;font-weight:700;font-size:.85rem;margin:6px 0}
+@media(max-width:520px){.gx-hero{padding:18px 16px}.gx-hero h2{font-size:1.3rem}.gx-hero .gx-cross{font-size:3.4rem}}
 `; document.head.appendChild(st);
-/* --- page + menu --- */
+
+/* ---------- ገጽና ምናሌ ---------- */
+const old=$('page-exams'); if(old) old.remove();
 const page=document.createElement('div'); page.id='page-exams'; page.className='page';
-page.innerHTML=`<h2 class="page-title">📝 ፈተና</h2><p class="page-sub">ለእያንዳንዱ የስልጠና ዓይነት ፈተና ፍጠሩ፣ በሊንክ ይላኩ፣ ውጤት ይቀበሉ።</p><div id="gxBody"></div>`;
+page.innerHTML='<h2 class="page-title">📝 ፈተና</h2><p class="page-sub">ለእያንዳንዱ የስልጠና ዓይነት ፈተና ፍጠሩ፣ በሊንክ ይላኩ፣ ውጤት ይቀበሉ።</p><div id="gxBody"></div>';
 const anchor=$('page-structure'); anchor.parentNode.insertBefore(page,anchor);
-const mi=document.createElement('div'); mi.className='menu-item'; mi.setAttribute('onclick',"showPage('exams',this)"); mi.innerHTML='<div class="menu-icon">📝</div> ፈተና';
-const gm=[...document.querySelectorAll('.menu-item')].find(m=>(m.getAttribute('onclick')||'').includes("'grades'")); gm.parentNode.insertBefore(mi,gm.nextSibling);
-/* --- builder --- */
-let draft=[], viewRes=null;
-function trainOpts(sel){ return '<option value="">-- ይምረጡ --</option>'+ggTrainAll().map(x=>`<option ${x===sel?'selected':''}>${E(x)}</option>`).join(''); }
+if(!document.querySelector('.menu-item[onclick*="\'exams\'"]')){
+  const mi=document.createElement('div'); mi.className='menu-item'; mi.setAttribute('onclick',"showPage('exams',this)"); mi.innerHTML='<div class="menu-icon">📝</div> ፈተና';
+  const gm=[...document.querySelectorAll('.menu-item')].find(m=>(m.getAttribute('onclick')||'').includes("'grades'")); gm.parentNode.insertBefore(mi,gm.nextSibling);
+}
+
+/* ---------- ከዚህ በፊት የተፈጠሩ ፈተናዎች እንዳይበላሹ ---------- */
+function normQ(q){
+  if(q.t==='tf'){ q.o=TF.slice(); q.a=+q.a?1:0; }
+  else if(q.t==='sa'){ if(!Array.isArray(q.a)) q.a=[String(q.a||'')]; q.o=[]; }
+  else { q.t='mc'; q.a=+q.a||0; }
+  q.p=qPts(q); return q;
+}
+
+/* ---------- የአስተባባሪ ክፍል ---------- */
+const trainOpts=sel=>'<option value="">-- ይምረጡ --</option>'+ggTrainAll().map(x=>'<option value="'+E(x)+'"'+(x===sel?' selected':'')+'>'+E(x)+'</option>').join('');
+const GX={view:'list',d:null,qd:null,share:null,recv:null,res:null};
+function newQd(p){ return {t:'mc',q:'',o:['','','',''],a:0,tf:0,sa:'',p:p||1}; }
 window.ggExRender=function(){
   exs(); const b=$('gxBody'); if(!b) return;
-  const list=state.exams.map((e,i)=>{
-    const rs=state.examResults.filter(r=>r.examId===e.id), avg=rs.length?Math.round(rs.reduce((a,r)=>a+r.score/r.max*100,0)/rs.length):0;
-    return `<div class="gx-q"><div><b>${E(e.title)}</b> <span class="gx-chip">${E(e.training||'—')}</span><span class="gx-chip">${e.qs.length} <span>ጥያቄዎች</span></span><span class="gx-chip">${e.minutes?e.minutes+' <span>ደቂቃ</span>':'<span>ጊዜ ገደብ የለም</span>'}</span></div>
-    <div style="font-size:.82rem;color:#6b7c72;margin:4px 0">${rs.length} <span>ተመዛኞች</span> · <span>አማካይ</span> ${avg}%</div>
-    <div class="btn-row" style="margin-top:6px"><button class="btn btn-primary btn-sm" onclick="ggExLink(${i})">🔗 ሊንክ ቅዳ</button><button class="btn btn-info btn-sm" onclick="ggExTry(${i})">👁 ሞክር</button><button class="btn btn-gold btn-sm" onclick="ggExRes(${i})">📊 ውጤቶች</button><button class="btn btn-ghost btn-sm" onclick="ggExDel(${i})">🗑 ሰርዝ</button></div></div>`;
-  }).join('')||'<p class="empty">ፈተና አልተፈጠረም።</p>';
-  let res='';
-  if(viewRes!=null && state.exams[viewRes]){
-    const e=state.exams[viewRes], rs=state.examResults.filter(r=>r.examId===e.id);
-    res=`<div class="card"><h3>📊 ${E(e.title)}</h3>`+(rs.length?`<div style="overflow:auto"><table><thead><tr><th>ስም</th><th>ነጥብ</th><th>%</th><th>ቀን</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${E(r.name)}</td><td>${r.score}/${r.max}</td><td>${Math.round(r.score/r.max*100)}%</td><td>${new Date(r.at).toLocaleDateString()}</td></tr>`).join('')}</tbody></table></div><div class="btn-row"><button class="btn btn-ghost btn-sm" onclick="ggExCsv(${viewRes})">⬇ CSV</button></div>`:'<p class="empty">እስካሁን ውጤት የለም።</p>')+'</div>';
+  state.exams.forEach(e=>(e.qs||[]).forEach(normQ));
+  const nTk=state.examResults.length, avg=nTk?Math.round(state.examResults.reduce((a,r)=>a+pctOf(r),0)/nTk):0;
+  let h='<div class="gx-hero"><span class="gx-cross">✝</span><h2>⚡ ዘመናዊ ፈተና</h2><p>ፈተና ያዘጋጁ፣ በሊንክ ይላኩ — ተመዛኙ ስሙን አስገብቶ ይመልሳል፤ ውጤቱ በኮድ ይመለስልዎታል።</p>'+
+    '<div class="gx-pills"><span class="gx-pill"><b>'+state.exams.length+'</b> <span>ፈተናዎች</span></span><span class="gx-pill"><b>'+nTk+'</b> <span>ተመዛኞች</span></span><span class="gx-pill"><b>'+avg+'%</b> <span>አማካይ</span></span></div></div>';
+  if(GX.view==='edit'&&GX.d) h+=editorHtml();
+  else if(GX.view==='res'&&GX.res) h+=resultsHtml(GX.res);
+  else{
+    h+='<div class="btn-row" style="margin-bottom:6px"><button class="btn btn-primary" data-a="new">➕ አዲስ ፈተና ፍጠር</button></div>';
+    h+=state.exams.length?state.exams.map(cardHtml).join(''):'<div class="card"><div class="gx-empty">ገና ፈተና አልተፈጠረም።</div></div>';
   }
-  b.innerHTML=`
-  <div class="card"><h3>📥 ውጤት ተቀበል</h3><p style="font-size:.85rem;color:#6b7c72;margin:0 0 8px">ተመዛኙ የላከውን የውጤት ኮድ እዚህ ይለጥፉ።</p>
-    <textarea id="gxCode" class="gx-code" placeholder="R1.…"></textarea><div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" onclick="ggExAccept()">✅ ተቀበል</button></div></div>
-  <div class="card"><h3>📚 የተፈጠሩ ፈተናዎች</h3>${list}</div>${res}
-  <div class="card"><h3>➕ አዲስ ፈተና</h3>
-    <div class="form-grid">
-      <div class="form-field"><label>የፈተና ርዕስ</label><input id="gxTitle" maxlength="80"></div>
-      <div class="form-field"><label>የስልጠና ዓይነት</label><select id="gxTrain">${trainOpts('')}</select></div>
-      <div class="form-field"><label>ጊዜ (ደቂቃ፣ 0 = ገደብ የለም)</label><input id="gxMin" type="number" min="0" value="0"></div>
-      <div class="form-field"><label>ውጤት ወዲያው ለተመዛኙ ይታይ</label><select id="gxInst"><option value="0">አይ</option><option value="1">አዎ</option></select></div>
-    </div>
-    <h4 style="margin:14px 0 6px;color:#1a4d2e">ጥያቄ ጨምር</h4>
-    <div class="form-grid">
-      <div class="form-field"><label>የጥያቄ አይነት</label><select id="gxType"><option value="mc">ምርጫ</option><option value="tf">እውነት / ሐሰት</option></select></div>
-      <div class="form-field full"><label>ጥያቄ</label><input id="gxQ"></div>
-      <div class="form-field full" id="gxOptsW"><label>ምርጫዎች (በእያንዳንዱ መስመር አንድ)</label><textarea id="gxOpts" rows="4"></textarea></div>
-      <div class="form-field" id="gxAnsMcW"><label>ትክክለኛ መልስ ቁጥር (1፣ 2…)</label><input id="gxAns" type="number" min="1" value="1"></div>
-      <div class="form-field" id="gxAnsTfW" style="display:none"><label>ትክክለኛ መልስ</label><select id="gxAnsTf"><option value="0">እውነት</option><option value="1">ሐሰት</option></select></div>
-    </div>
-    <div class="btn-row"><button class="btn btn-gold" onclick="ggExAddQ()">➕ ጥያቄ ጨምር</button></div>
-    <div id="gxDraft">${draftHtml()}</div>
-    <div class="btn-row"><button class="btn btn-primary" onclick="ggExPublish()">📝 ፈተናውን አስቀምጥ</button></div>
-  </div>`;
-  $('gxType').onchange=function(){ const tf=this.value==='tf'; $('gxOptsW').style.display=tf?'none':''; $('gxAnsMcW').style.display=tf?'none':''; $('gxAnsTfW').style.display=tf?'':'none'; };
+  b.innerHTML=h; wire(b);
+  if(GX.view==='list'&&GX.share){ const p=$('gxSharePan'); if(p) fillShare(p,GX.share); }
 };
-function draftHtml(){ return draft.map((q,i)=>`<div class="gx-q"><b>${i+1}.</b> ${E(q.q)} <span class="gx-chip">${q.t==='tf'?'እውነት / ሐሰት':'ምርጫ'}</span> <a href="#" onclick="ggExDq(${i});return false" style="color:#b83b3b;font-weight:700">✕</a></div>`).join(''); }
-window.ggExDq=function(i){ draft.splice(i,1); $('gxDraft').innerHTML=draftHtml(); };
-window.ggExAddQ=function(){
-  const t=$('gxType').value, q=$('gxQ').value.trim(); if(!q){ showToast('ጥያቄ ያስገቡ','error'); return; }
-  if(t==='tf'){ draft.push({t,q,o:['እውነት','ሐሰት'],a:+$('gxAnsTf').value}); }
-  else{ const o=$('gxOpts').value.split('\n').map(x=>x.trim()).filter(Boolean), a=(+$('gxAns').value||1)-1;
-    if(o.length<2){ showToast('ቢያንስ 2 ምርጫዎች ያስፈልጋሉ','error'); return; } if(a<0||a>=o.length){ showToast('የመልስ ቁጥር ከምርጫዎቹ ውጭ ነው','error'); return; }
-    draft.push({t,q,o,a}); }
-  $('gxQ').value=''; $('gxOpts').value=''; $('gxAns').value=1; $('gxDraft').innerHTML=draftHtml();
-};
-window.ggExPublish=function(){
-  exs(); if(!draft.length){ showToast('ቢያንስ አንድ ጥያቄ ይጨምሩ','error'); return; }
-  const tr=$('gxTrain').value; if(!tr){ showToast('የስልጠና ዓይነት ይምረጡ','error'); return; }
-  state.exams.unshift({id:'EX'+Date.now().toString(36),title:$('gxTitle').value.trim()||('ፈተና — '+tr),training:tr,minutes:Math.max(0,+$('gxMin').value||0),instant:$('gxInst').value==='1',qs:draft,at:Date.now()});
-  draft=[]; save(); showToast('ፈተናው ተቀምጧል'); ggExRender();
-};
-window.ggExDel=function(i){ if(!confirm('ይህ ፈተና ይሰረዝ?')) return; exs(); const e=state.exams[i]; state.exams.splice(i,1); state.examResults=state.examResults.filter(r=>r.examId!==e.id); save(); ggExRender(); };
-window.ggExRes=function(i){ viewRes=(viewRes===i?null:i); ggExRender(); };
-window.ggExCsv=function(i){ const e=state.exams[i], rs=state.examResults.filter(r=>r.examId===e.id);
-  const rows=[['ስም','ነጥብ','ከ','%','ቀን']].concat(rs.map(r=>[r.name,r.score,r.max,Math.round(r.score/r.max*100),new Date(r.at).toISOString().slice(0,10)]));
-  const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='exam-results.csv'; a.click(); };
-async function linkFor(e){
-  const o={i:e.id,t:e.title,g:e.training,m:e.minutes,q:e.qs.map(q=>[q.t,q.q,q.o])}; if(e.instant) o.k=e.qs.map(q=>q.a);
-  return location.href.split('#')[0]+'#x='+await pack(o);
+function cardHtml(e){
+  const rs=resOf(e.id), tot=e.qs.reduce((a,q)=>a+qPts(q),0);
+  return '<div class="gx-ex"><div class="gx-ex-h"><div><b style="font-size:1.02rem;color:var(--gx-g2)">'+E(e.title)+'</b><div style="margin-top:5px">'+
+    '<span class="gx-chip">'+E(e.training||'—')+'</span><span class="gx-chip">'+e.qs.length+' <span>ጥያቄዎች</span></span><span class="gx-chip">'+tot+' <span>ነጥብ</span></span>'+
+    '<span class="gx-chip">'+(e.minutes?'⏱ '+e.minutes+' <span>ደቂቃ</span>':'<span>ጊዜ ገደብ የለም</span>')+'</span></div></div>'+
+    '<span class="gx-chip g">'+(e.instant?'🎯 <span>ልምምድ</span>':'🔒 <span>ይፋዊ ፈተና</span>')+'</span></div>'+
+    '<div class="gx-acts"><button class="btn btn-primary btn-sm" data-a="share" data-id="'+E(e.id)+'">🔗 <span>አጋራ</span></button>'+
+    '<button class="btn btn-info btn-sm" data-a="recv" data-id="'+E(e.id)+'">📥 <span>ምላሽ ተቀበል</span></button>'+
+    '<button class="btn btn-gold btn-sm" data-a="res" data-id="'+E(e.id)+'">📊 <span>ውጤቶች</span> ('+rs.length+')</button>'+
+    '<button class="btn btn-ghost btn-sm" data-a="try" data-id="'+E(e.id)+'">👁 <span>ሞክር</span></button>'+
+    '<button class="btn btn-ghost btn-sm" data-a="edit" data-id="'+E(e.id)+'">✏️</button>'+
+    '<button class="btn btn-danger btn-sm" data-a="del" data-id="'+E(e.id)+'">🗑</button></div>'+
+    (GX.share===e.id?'<div class="gx-pan" id="gxSharePan"><p class="meta">…</p></div>':'')+
+    (GX.recv===e.id?'<div class="gx-pan"><label><b>የተመዛኞችን ኮድ ወይም ሊንክ ይለጥፉ (በየመስመሩ አንድ)</b></label><textarea id="gxRecvT" rows="4" placeholder="R1.… / …#xr=…"></textarea><button class="btn btn-primary" data-a="recvgo" data-id="'+E(e.id)+'">✅ <span>አስገባና አስላ</span></button></div>':'')+'</div>';
 }
-window.ggExLink=async function(i){ const l=await linkFor(state.exams[i]);
-  try{ await navigator.clipboard.writeText(l); showToast('ሊንኩ ተቀድቷል — ለተመዛኞች ይላኩ'); }catch(e){ prompt('ሊንኩን ይቅዱ',l); } };
-window.ggExTry=async function(i){ const l=await linkFor(state.exams[i]); location.hash='x='+l.split('#x=')[1]; };
-window.ggExAccept=async function(){
-  exs(); let c=($('gxCode').value||'').trim(); if(!c){ return; }
-  try{
-    if(c.indexOf('R1.')!==0) throw 0; const r=await unpack(c.slice(3)); const e=state.exams.find(x=>x.id===r.e); if(!e){ showToast('ይህ ፈተና በዚህ መሣሪያ የለም','error'); return; }
-    if(state.examResults.some(x=>x.code===c)){ showToast('ይህ ውጤት አስቀድሞ ተመዝግቧል','error'); return; }
-    let sc=0; e.qs.forEach((q,i)=>{ if(r.a[i]===q.a) sc++; });
-    state.examResults.unshift({id:'R'+Date.now().toString(36),examId:e.id,examTitle:e.title,training:e.training,name:String(r.n||'').slice(0,60),score:sc,max:e.qs.length,at:r.d||Date.now(),code:c});
-    save(); $('gxCode').value=''; showToast('ውጤት ተመዝግቧል፦ '+sc+'/'+e.qs.length); viewRes=state.exams.indexOf(e); ggExRender();
-  }catch(err){ showToast('ኮዱ ልክ አይደለም','error'); }
-};
-/* --- taker overlay --- */
+function editorHtml(){
+  const d=GX.d, qd=GX.qd||(GX.qd=newQd());
+  let h='<div class="card"><h3>'+(d.id?'✏️ ፈተና አርትዕ':'➕ አዲስ ፈተና')+'</h3>'+
+   '<div class="form-grid"><div class="form-field"><label>የፈተና ርዕስ <span class="req">*</span></label><input id="gxTitle" maxlength="80" value="'+E(d.title)+'"></div>'+
+   '<div class="form-field"><label>የስልጠና ዓይነት <span class="req">*</span></label><select id="gxTrain">'+trainOpts(d.training)+'</select></div>'+
+   '<div class="form-field"><label>አዘጋጅ (የእርስዎ ስም)</label><input id="gxBy" maxlength="60" value="'+E(d.by)+'"></div>'+
+   '<div class="form-field"><label>⏱ ጊዜ (ደቂቃ፣ 0 = ገደብ የለም)</label><input id="gxMin" type="number" min="0" max="240" value="'+E(d.minutes||0)+'"></div></div>'+
+   '<div class="gx-modes"><label class="gx-mode'+(d.instant?' on':'')+'"><input type="radio" name="gxMode" value="p"'+(d.instant?' checked':'')+'><b>🎯 ልምምድ</b><span>ተመዛኙ ውጤቱን ወዲያው ያያል (ቁልፉ በሊንኩ ውስጥ ተመስጥሮ ይሄዳል)</span></label>'+
+   '<label class="gx-mode'+(!d.instant?' on':'')+'"><input type="radio" name="gxMode" value="f"'+(!d.instant?' checked':'')+'><b>🔒 ይፋዊ ፈተና</b><span>ቁልፉ ከእርስዎ ጋር ብቻ ነው፤ ተመዛኙ ኮድ ይልክልዎታል</span></label></div>'+
+   '<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="gxSh"'+(d.sh?' checked':'')+'> 🔀 <span>ጥያቄዎችንና ምርጫዎችን አዋህድ</span></label>'+
+   '<h4 style="margin:14px 0 4px;color:var(--gx-g2)">📋 <span>ጥያቄዎች</span> ('+d.qs.length+')</h4>'+
+   (d.qs.length?d.qs.map((q,i)=>{
+     const key=q.t==='mc'?String.fromCharCode(65+q.a)+') '+q.o[q.a]:(q.t==='tf'?TF[q.a]:q.a.join(' | '));
+     return '<div class="gx-q"><div><span class="gx-chip g">'+E(KIND[q.t])+'</span> <b>'+(i+1)+'.</b> '+E(q.q)+'<div class="meta" style="font-size:.78rem;color:#6b7c72">🔑 '+E(key)+' · '+qPts(q)+' <span>ነጥብ</span></div></div>'+
+       '<div class="qa"><button class="btn btn-ghost btn-sm" data-a="qup" data-i="'+i+'">↑</button><button class="btn btn-ghost btn-sm" data-a="qdn" data-i="'+i+'">↓</button><button class="btn btn-ghost btn-sm" data-a="qed" data-i="'+i+'">✏️</button><button class="btn btn-danger btn-sm" data-a="qdel" data-i="'+i+'">✕</button></div></div>';
+   }).join(''):'<div class="gx-empty">ገና ጥያቄ አልጨመሩም።</div>')+
+   '<div class="gx-pan"><div class="gx-seg">'+Object.keys(KIND).map(k=>'<button type="button" class="'+(qd.t===k?'on':'')+'" data-a="qk" data-k="'+k+'">'+E(KIND[k])+'</button>').join('')+'</div>'+
+   '<div class="form-field"><textarea id="gxQ" rows="2" placeholder="ጥያቄው">'+E(qd.q)+'</textarea></div>'+
+   (qd.t==='mc'?'<div>'+qd.o.map((t,i)=>'<div class="gx-opt-row"><input type="radio" name="gxCorr" value="'+i+'"'+(qd.a===i?' checked':'')+' title="ትክክለኛ መልስ"><span class="ol">'+String.fromCharCode(65+i)+'</span><input type="text" class="gx-ot" maxlength="120" value="'+E(t)+'" placeholder="ምርጫ '+String.fromCharCode(65+i)+'"></div>').join('')+
+     (qd.o.length<6?'<button type="button" class="btn btn-ghost btn-sm" data-a="qaddo">＋ <span>ምርጫ</span></button>':'')+'<p class="meta" style="font-size:.78rem;color:#6b7c72">🔑 ትክክለኛውን ምርጫ በክብ ምልክት ይምረጡ — ይህ የመልስ ቁልፉ ነው።</p></div>':'')+
+   (qd.t==='tf'?'<div style="display:flex;gap:16px;margin:6px 0"><label><input type="radio" name="gxTf" value="0"'+(!qd.tf?' checked':'')+'> ✅ <span>መልሱ እውነት</span></label><label><input type="radio" name="gxTf" value="1"'+(qd.tf?' checked':'')+'> ❌ <span>መልሱ ሐሰት</span></label></div>':'')+
+   (qd.t==='sa'?'<div class="form-field"><input type="text" id="gxSa" maxlength="200" value="'+E(qd.sa)+'" placeholder="ተቀባይነት ያላቸው መልሶች በ ፣ ወይም , ይለዩ"><p class="meta" style="font-size:.78rem;color:#6b7c72">🔑 ፊደሉና ክፍተቱ ልዩነት አይፈጥርም፤ ከተዘረዘሩት አንዱ ከሆነ ትክክል ነው።</p></div>':'')+
+   '<div class="form-grid"><div class="form-field"><label>ነጥብ</label><input id="gxP" type="number" min="1" max="20" value="'+E(qd.p)+'"></div></div>'+
+   '<p class="gx-err" id="gxErQ"></p><button class="btn btn-gold" data-a="qadd">＋ <span>ጥያቄውን ጨምር</span></button></div>'+
+   '<p class="gx-err" id="gxEr"></p><div class="btn-row"><button class="btn btn-primary" data-a="save">💾 <span>ፈተናውን አስቀምጥ</span></button><button class="btn btn-ghost" data-a="cancel"><span>ተወው</span></button></div></div>';
+  return h;
+}
+function resultsHtml(id){
+  const e=state.exams.find(x=>x.id===id); if(!e) return '';
+  const rows=resOf(id).map(r=>({r,pc:pctOf(r)})).sort((a,b)=>b.r.score-a.r.score||(a.r.u||0)-(b.r.u||0));
+  const n=rows.length, avg=n?Math.round(rows.reduce((a,x)=>a+x.pc,0)/n):0;
+  let h='<div class="card"><div class="btn-row" style="margin-bottom:8px"><button class="btn btn-ghost btn-sm" data-a="back">← <span>ተመለስ</span></button><button class="btn btn-ghost btn-sm" data-a="csv" data-id="'+E(id)+'">⬇ CSV</button><button class="btn btn-ghost btn-sm" data-a="print" data-id="'+E(id)+'">🖨</button></div>'+
+    '<h3>📊 '+E(e.title)+'</h3><div class="gx-kpis">'+
+    '<div class="gx-kpi g"><div class="ic">👥</div><div><div class="n">'+n+'</div><div class="l">ተመዛኞች</div></div></div>'+
+    '<div class="gx-kpi"><div class="ic">📈</div><div><div class="n">'+avg+'%</div><div class="l">አማካይ</div></div></div>'+
+    '<div class="gx-kpi"><div class="ic">🏆</div><div><div class="n">'+(n?rows[0].pc+'%':'—')+'</div><div class="l">ከፍተኛ</div></div></div>'+
+    '<div class="gx-kpi"><div class="ic">📉</div><div><div class="n">'+(n?rows[n-1].pc+'%':'—')+'</div><div class="l">ዝቅተኛ</div></div></div></div></div>';
+  h+='<div class="card"><h3>🏆 <span>የውጤት ደረጃ</span></h3>'+(n?'<div style="overflow:auto"><table class="gx-tbl"><thead><tr><th>#</th><th>ስም</th><th>ቡድን</th><th>ነጥብ</th><th>%</th><th>⏱</th><th></th></tr></thead><tbody>'+
+    rows.map((x,i)=>'<tr><td>'+(i<3?['🥇','🥈','🥉'][i]:i+1)+'</td><td>'+E(x.r.name)+'</td><td>'+E(x.r.cls||'')+'</td><td><b>'+x.r.score+'/'+x.r.max+'</b></td><td><span class="gx-pct '+(x.pc>=50?'ok':'bad')+'">'+x.pc+'%</span></td><td>'+(x.r.u?fmtT(x.r.u):'—')+'</td><td><button class="btn btn-danger btn-sm" data-a="rdel" data-id="'+E(id)+'" data-rid="'+E(x.r.id)+'">✕</button></td></tr>').join('')+
+    '</tbody></table></div>':'<div class="gx-empty">ገና ምላሽ አልገባም — «ምላሽ ተቀበል» ይጠቀሙ።</div>')+'</div>';
+  const withA=rows.filter(x=>Array.isArray(x.r.a));
+  if(withA.length){
+    h+='<div class="card"><h3>🔎 <span>ጥያቄ በጥያቄ</span></h3>'+e.qs.map((q,i)=>{
+      const ok=withA.filter(x=>okAns(q,x.r.a[i])).length, pc=Math.round(ok/withA.length*100);
+      return '<div class="gx-pq"><div style="font-size:.84rem"><b>'+(i+1)+'.</b> '+E(String(q.q).slice(0,80))+'</div><div class="gx-bar"><span class="b"><i class="'+(pc>=50?'ok':'bad')+'" style="width:'+pc+'%"></i></span><span class="v">'+ok+'/'+withA.length+'</span></div></div>';
+    }).join('')+'</div>';
+  }
+  return h;
+}
+function wire(host){
+  const q=i=>host.querySelector('#'+i);
+  function readEd(){
+    const d=GX.d; if(!d||!q('gxTitle')) return;
+    d.title=q('gxTitle').value; d.training=q('gxTrain').value; d.by=q('gxBy').value; d.minutes=Math.max(0,parseInt(q('gxMin').value,10)||0);
+    const m=host.querySelector('input[name="gxMode"]:checked'); d.instant=!m||m.value==='p'; d.sh=q('gxSh').checked; readQd();
+  }
+  function readQd(){
+    const qd=GX.qd; if(!qd||!q('gxQ')) return;
+    qd.q=q('gxQ').value; qd.p=Math.max(1,Math.min(20,parseInt(q('gxP').value,10)||1));
+    if(qd.t==='mc'){ qd.o=[].map.call(host.querySelectorAll('.gx-ot'),i=>i.value); const c=host.querySelector('input[name="gxCorr"]:checked'); qd.a=c?parseInt(c.value,10):0; }
+    if(qd.t==='tf'){ const t=host.querySelector('input[name="gxTf"]:checked'); qd.tf=t?parseInt(t.value,10):0; }
+    if(qd.t==='sa'&&q('gxSa')) qd.sa=q('gxSa').value;
+  }
+  const redraw=()=>window.ggExRender();
+  host.onchange=function(ev){ const t=ev.target; if(t&&t.name==='gxMode') [].forEach.call(host.querySelectorAll('.gx-mode'),l=>l.classList.toggle('on',l.querySelector('input').checked)); };
+  host.onclick=function(ev){
+    const bt=ev.target.closest?ev.target.closest('button'):null; if(!bt) return;
+    const a=bt.getAttribute('data-a'), id=bt.getAttribute('data-id'), i=parseInt(bt.getAttribute('data-i'),10);
+    if(!a) return;
+    if(a==='new'){ GX.d={id:'',title:'',training:'',by:'',minutes:0,instant:true,sh:false,qs:[]}; GX.qd=null; GX.view='edit'; return redraw(); }
+    if(a==='cancel'||a==='back'){ GX.view='list'; GX.d=null; GX.qd=null; GX.res=null; return redraw(); }
+    if(a==='share'){ GX.share=GX.share===id?null:id; GX.recv=null; return redraw(); }
+    if(a==='recv'){ GX.recv=GX.recv===id?null:id; GX.share=null; return redraw(); }
+    if(a==='res'){ GX.res=id; GX.view='res'; return redraw(); }
+    if(a==='try'){ const e=state.exams.find(x=>x.id===id); if(e) pack(pub(e)).then(c=>{ location.hash='x='+c; }); return; }
+    if(a==='edit'){ const e=state.exams.find(x=>x.id===id); if(!e) return; GX.d=JSON.parse(JSON.stringify(e)); GX.d.qs.forEach(normQ); GX.qd=null; GX.view='edit'; return redraw(); }
+    if(a==='del'){ if(!confirm('ይህ ፈተናና ውጤቶቹ ይጠፋሉ። ይቀጥሉ?')) return; state.exams=state.exams.filter(x=>x.id!==id); state.examResults=state.examResults.filter(r=>r.examId!==id); save(); return redraw(); }
+    if(a==='recvgo'){ return importCodes((q('gxRecvT')||{}).value||'',id).then(r=>{ showToast('ተቀብሏል፦ '+r.ok+(r.bad?' · ያልተሳኩ፦ '+r.bad:''),r.ok?'success':'error'); if(r.ok){ GX.recv=null; GX.res=id; GX.view='res'; } redraw(); }); }
+    if(a==='csv'){ const e=state.exams.find(x=>x.id===id); const rows=resOf(id).map(r=>[r.name,r.cls||'',r.score,r.max,pctOf(r),r.u?fmtT(r.u):'',new Date(r.at||Date.now()).toISOString().slice(0,10)]);
+      const csv='﻿'+[['ስም','ቡድን','ነጥብ','ከ','%','ጊዜ','ቀን']].concat(rows).map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+      const l=document.createElement('a'); l.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); l.download='exam-'+String(e.title).replace(/[^\p{L}\p{N}]+/gu,'_')+'.csv'; document.body.appendChild(l); l.click(); setTimeout(()=>{ URL.revokeObjectURL(l.href); l.remove(); },500); return; }
+    if(a==='print'){ const w=window.open('','_blank'); if(!w) return; const tb=host.querySelector('.gx-tbl'); w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ውጤት</title><style>body{font-family:sans-serif;padding:24px}table{border-collapse:collapse}td,th{border:1px solid #999;padding:5px 9px;font-size:13px}</style></head><body><h2>'+E(orgName())+'</h2>'+(tb?tb.outerHTML.replace(/<td><button[\s\S]*?<\/button><\/td>/g,'<td></td>'):'')+'</body></html>'); w.document.close(); w.print(); return; }
+    if(a==='rdel'){ if(!confirm('ይህ ምላሽ ይጥፋ?')) return; const rid=bt.getAttribute('data-rid'); state.examResults=state.examResults.filter(r=>!(r.examId===id&&r.id===rid)); save(); return redraw(); }
+    readEd();
+    if(a==='qk'){ GX.qd=Object.assign(newQd(GX.qd.p),{t:bt.getAttribute('data-k'),q:GX.qd.q}); return redraw(); }
+    if(a==='qaddo'){ if(GX.qd.o.length<6) GX.qd.o.push(''); return redraw(); }
+    if(a==='qadd'){
+      const qd=GX.qd, er=q('gxErQ'), nq={t:qd.t,q:qd.q.trim(),p:qd.p||1};
+      const bad=m=>{ er.textContent=m; er.style.display='block'; };
+      if(!nq.q) return bad('ጥያቄውን ይጻፉ');
+      if(qd.t==='mc'){ const opts=[]; let ci=-1; qd.o.forEach((t,k)=>{ if(t.trim()){ if(k===qd.a) ci=opts.length; opts.push(t.trim()); } });
+        if(opts.length<2) return bad('ቢያንስ 2 ምርጫ ያስፈልጋል'); if(ci<0) return bad('ትክክለኛው ምርጫ ባዶ ነው'); nq.o=opts; nq.a=ci; }
+      if(qd.t==='tf'){ nq.o=TF.slice(); nq.a=qd.tf?1:0; }
+      if(qd.t==='sa'){ nq.o=[]; nq.a=qd.sa.split(/[,፣]/).map(x=>x.trim()).filter(Boolean); if(!nq.a.length) return bad('ቢያንስ አንድ ትክክለኛ መልስ ያስገቡ'); }
+      if(qd._at!==undefined) GX.d.qs.splice(qd._at,0,nq); else GX.d.qs.push(nq);
+      GX.qd=newQd(qd.p); GX.qd.t=qd.t; return redraw();
+    }
+    if(a==='qdel'){ GX.d.qs.splice(i,1); return redraw(); }
+    if(a==='qup'&&i>0){ const t=GX.d.qs.splice(i,1)[0]; GX.d.qs.splice(i-1,0,t); return redraw(); }
+    if(a==='qdn'&&i<GX.d.qs.length-1){ const t=GX.d.qs.splice(i,1)[0]; GX.d.qs.splice(i+1,0,t); return redraw(); }
+    if(a==='qed'){ const q0=GX.d.qs.splice(i,1)[0]; GX.qd={t:q0.t,q:q0.q,o:q0.t==='mc'?q0.o.slice():['','','',''],a:q0.t==='mc'?q0.a:0,tf:q0.t==='tf'?q0.a:0,sa:q0.t==='sa'?q0.a.join('፣ '):'',p:qPts(q0),_at:i}; return redraw(); }
+    if(a==='save'){
+      const d=GX.d, er=q('gxEr'), bad=m=>{ er.textContent=m; er.style.display='block'; };
+      if(!d.title.trim()) return bad('ርዕስ ያስገቡ'); if(!d.training) return bad('የስልጠና ዓይነት ይምረጡ');
+      if(!d.qs.length) return bad('ቢያንስ አንድ ጥያቄ ይጨምሩ'); if(d.qs.length>40) return bad('ከ40 ጥያቄ አይበልጥም');
+      d.title=d.title.trim(); exs();
+      if(d.id){ const k=state.exams.findIndex(x=>x.id===d.id); if(k>=0) state.exams[k]=d; }
+      else{ d.id='EX'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36); d.at=Date.now(); state.exams.unshift(d); }
+      save(); showToast('ተቀምጧል'); GX.view='list'; GX.d=null; GX.qd=null; return redraw();
+    }
+  };
+}
+/* ---------- ሊንክ ማጋራት ---------- */
+function pub(e){
+  const o={v:2,i:e.id,t:e.title,g:e.training||'',m:e.minutes||0,sh:e.sh?1:0,by:e.by||'',og:orgName(),p:e.instant?1:0,
+    q:e.qs.map(q=>[q.t,q.q,q.t==='sa'?[]:q.o,qPts(q)])};
+  if(e.instant) o.h=e.qs.map((q,i)=>q.t==='sa'?q.a.map(x=>hash(e.id+':'+i+':'+norm(x))):[hash(e.id+':'+i+':'+q.a)]);
+  return o;
+}
+function fillShare(pan,id){
+  const e=state.exams.find(x=>x.id===id); if(!e) return;
+  pack(pub(e)).then(code=>{
+    const link=baseUrl()+'#x='+code, msg='📝 ፈተና፦ '+e.title+'\nከሊንኩ ገብተው ስምዎን ያስገቡና ይመልሱ፦\n'+link, long=link.length>3800;
+    pan.innerHTML='<label><b>🔗 የተመዛኝ ሊንክ</b></label><textarea readonly rows="3" id="gxLink">'+E(link)+'</textarea>'+
+      (long?'<p class="gx-err" style="display:block"><span>ሊንኩ ረጅም ነው፤ አንዳንድ መተግበሪያዎች ሊቆርጡት ይችላሉ — ጥያቄዎችን ይቀንሱ።</span> ('+link.length+')</p>':'<p class="meta" style="font-size:.78rem;color:#6b7c72">'+link.length+' <span>ፊደል</span> · <span>'+(e.instant?'ልምምድ — ተመዛኙ ውጤቱን ወዲያው ያያል':'ይፋዊ — ቁልፉ በሊንኩ ውስጥ የለም')+'</span></p>')+
+      '<div class="gx-acts"><button class="btn btn-primary btn-sm" id="gxCopy">📋 ቅዳ</button>'+
+      '<a class="btn btn-info btn-sm" target="_blank" rel="noopener" href="https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('📝 ፈተና፦ '+e.title)+'">✈️ Telegram</a>'+
+      '<a class="btn btn-gold btn-sm" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">💬 WhatsApp</a>'+
+      (navigator.share?'<button class="btn btn-ghost btn-sm" id="gxShare">📤 አጋራ</button>':'')+'</div>';
+    pan.querySelector('#gxCopy').onclick=()=>copyTxt(link,()=>showToast('ተቀድቷል'));
+    const sb=pan.querySelector('#gxShare'); if(sb) sb.onclick=()=>{ try{ navigator.share({title:e.title,text:msg}); }catch(_){} };
+  });
+}
+/* ---------- ምላሽ መቀበል ---------- */
+async function importCodes(text,forceId){
+  exs(); const lines=String(text||'').split(/\s+/).filter(Boolean); let ok=0,bad=0;
+  for(const t of lines){
+    try{
+      const m=t.match(/#xr=([A-Za-z0-9_-]+)/); let c=m?'R1.'+m[1]:t; if(c.indexOf('R1.')!==0) throw 0;
+      const r=await unpack(c.slice(3)); const e=state.exams.find(x=>x.id===r.e);
+      if(!e||(forceId&&forceId!==r.e)||!r.n||!Array.isArray(r.a)) throw 0;
+      e.qs.forEach(normQ);
+      const nn=norm(r.n); state.examResults=state.examResults.filter(x=>!(x.examId===e.id&&norm(x.name)===nn));
+      const ans=r.a.slice(0,e.qs.length), s=scoreOf(e,ans);
+      state.examResults.unshift({id:'R'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),examId:e.id,examTitle:e.title,training:e.training,name:String(r.n).slice(0,60),cls:String(r.c||'').slice(0,30),score:s.score,max:s.max,a:ans,u:r.u||0,at:r.d||Date.now(),code:c});
+      ok++;
+    }catch(err){ bad++; }
+  }
+  if(ok) save(); return {ok,bad};
+}
+window.ggExAccept=function(){ return importCodes(($('gxCode')||{}).value||'').then(r=>{ showToast(r.ok?'ውጤት ተመዝግቧል':'ኮዱ ልክ አይደለም',r.ok?'success':'error'); if(window.ggExRender) window.ggExRender(); }); };
+
+/* ---------- የተመዛኝ ክፍል ---------- */
 let tm=null;
 async function openTake(){
-  const m=location.hash.match(/[#&]x=([^&]+)/); const old=$('gxTake'); if(old) old.remove(); clearInterval(tm);
-  if(!m) return;
-  let ex; try{ ex=await unpack(decodeURIComponent(m[1])); }catch(e){ showToast('የፈተና ሊንክ ልክ አይደለም','error'); return; }
-  const ov=document.createElement('div'); ov.id='gxTake'; ov.className='gx-take';
-  const Q=ex.q;
-  ov.innerHTML=`<div class="gx-in"><div class="gx-hero"><span class="gx-cross">✝</span><h2>${E(ex.t)}</h2><p>${E(ex.g||'')} · ${Q.length} ጥያቄዎች</p></div>
-  <div class="card" id="gxTakeBox"><div class="form-field"><label>ሙሉ ስምዎ</label><input id="gxName" maxlength="60"></div>
-  ${ex.m?`<div class="gx-timer" id="gxTimer">⏱ ${ex.m}:00</div>`:''}
-  <div id="gxQs">${Q.map((q,i)=>`<div class="gx-q"><b>${i+1}.</b> ${E(q[1])}${q[2].map((o,j)=>`<label class="gx-opt"><input type="radio" name="q${i}" value="${j}">${E(o)}</label>`).join('')}</div>`).join('')}</div>
-  <div class="btn-row"><button class="btn btn-primary" id="gxSubmit">✅ ላክ</button><button class="btn btn-ghost" id="gxClose">ዝጋ</button></div></div></div>`;
-  document.body.appendChild(ov);
-  const finish=async function(){
-    const name=$('gxName').value.trim(); if(!name){ showToast('ስምዎን ያስገቡ','error'); return false; }
-    clearInterval(tm);
-    const a=Q.map((q,i)=>{ const r=document.querySelector('input[name="q'+i+'"]:checked'); return r?+r.value:-1; });
-    const code='R1.'+await pack({e:ex.i,n:name,a,d:Date.now()});
-    let score=''; if(ex.k){ let s=0; ex.k.forEach((k,i)=>{ if(a[i]===k) s++; }); score=`<div class="gx-stat g" style="margin:10px 0"><div class="n">${s}/${Q.length}</div><div class="l">${Math.round(s/Q.length*100)}%</div></div>`; }
-    $('gxTakeBox').innerHTML=`<h3>✅ ተልኳል</h3>${score}<p style="font-size:.9rem">ይህንን የውጤት ኮድ ገልብጠው ለአስተባባሪው ይላኩ፦</p><textarea class="gx-code" id="gxOut" readonly>${code}</textarea><div class="btn-row"><button class="btn btn-gold" id="gxCopy">📋 ኮድ ቅዳ</button><button class="btn btn-ghost" id="gxClose2">ዝጋ</button></div>`;
-    $('gxCopy').onclick=function(){ $('gxOut').select(); try{ navigator.clipboard.writeText(code); }catch(e){ document.execCommand('copy'); } showToast('ተቀድቷል'); };
-    $('gxClose2').onclick=closeTake; return true;
-  };
-  function closeTake(){ clearInterval(tm); ov.remove(); history.replaceState(null,'',location.href.split('#')[0]); }
-  $('gxSubmit').onclick=finish; $('gxClose').onclick=closeTake;
-  if(ex.m){ let left=ex.m*60; tm=setInterval(function(){ left--; const t=$('gxTimer'); if(t) t.textContent='⏱ '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0'); if(left<=0){ clearInterval(tm); if(!$('gxName').value.trim()) $('gxName').value='—'; finish(); } },1000); }
+  const old=$('gxs'); if(old){ old.remove(); clearInterval(tm); }
+  const rm=location.hash.match(/[#&]xr=([A-Za-z0-9_-]+)/);
+  if(rm){ await importCodes('R1.'+rm[1]).then(r=>{ try{ history.replaceState(null,'',baseUrl()); }catch(_){}
+      showToast(r.ok?'✅ የተመዛኝ ምላሽ ተቀብሏል':'ይህ ምላሽ ከዚህ መሣሪያ ፈተና ጋር አይዛመድም (ፈተናው በዚህ መሣሪያ መዘጋጀት አለበት)',r.ok?'success':'error');
+      if(r.ok){ const mi=[].find.call(document.querySelectorAll('.menu-item'),m=>(m.getAttribute('onclick')||'').indexOf("'exams'")>=0); try{ showPage('exams',mi); }catch(_){} } });
+    return;
+  }
+  const m=location.hash.match(/[#&]x=([^&]+)/); if(!m) return;
+  let ex; try{ ex=await unpack(decodeURIComponent(m[1])); if(!ex||!ex.q||!ex.q.length||!ex.i) throw 0; }catch(e){ showToast('የፈተና ሊንክ ልክ አይደለም ወይም ተቆርጧል','error'); return; }
+  run(ex);
+}
+function run(ex){
+  const ov=document.createElement('div'); ov.id='gxs'; ov.className='gxs'; document.body.appendChild(ov);
+  const N=ex.q.length, instant=!!(ex.h||ex.k), doneKey='gx_done_'+ex.i;
+  const S={name:'',cls:'',i:0,ans:ex.q.map(q=>q[0]==='sa'?'':-1),t0:0,order:null,perm:null};
+  let prev=null; try{ prev=JSON.parse(localStorage.getItem(doneKey)||'null'); }catch(_){}
+  const shell=inner=>{ ov.innerHTML='<div class="gxs-w">'+inner+'</div>'; ov.scrollTop=0; };
+  const idx=n=>Array.from({length:n},(_,i)=>i);
+  const shuffle=a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+  const head=()=>'<div class="gxs-top"><div class="gxs-logo">✝</div><div><div class="gxs-sch">'+E(ex.og||'ዲጂታል ግቢ ጉባኤ')+'</div><div class="gxs-sub">ዘመናዊ ፈተና</div></div></div>';
+  const empty=a=>a===-1||a===''||a==null;
+  function codeBox(code,nm){
+    const link=baseUrl()+'#xr='+code.slice(3);
+    return '<div class="gxs-code"><p>📨 <b>ይህንን ለአስተባባሪዎ ይላኩ፦</b></p><textarea readonly id="gxsCodeT">'+E(link)+'</textarea><div class="gxs-row"><button type="button" class="gxs-go" id="gxsCopy">📋 ቅዳ</button>'+
+      '<a class="gxs-ghost" target="_blank" rel="noopener" href="https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('የፈተና ምላሼ — '+nm)+'">✈️ Telegram</a>'+
+      '<a class="gxs-ghost" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent('የፈተና ምላሼ — '+nm+'\n'+link)+'">💬 WhatsApp</a></div>'+
+      '<p style="font-size:.78rem;color:#6b7c72;margin-top:8px">ወይም ይህን ኮድ ብቻ ይላኩ፦</p><textarea readonly id="gxsCodeR" style="min-height:48px">'+E(code)+'</textarea></div>';
+  }
+  function wireCopy(link){ const c=ov.querySelector('#gxsCopy'); if(c) c.onclick=()=>copyTxt(link||ov.querySelector('#gxsCodeT').value,()=>{ c.textContent='✅ ተቀድቷል'; }); }
+  function intro(){
+    const meta=[ex.g,N+' ጥያቄዎች',ex.m?'⏱ '+ex.m+' ደቂቃ':'ያለ ሰዓት'].filter(Boolean);
+    shell(head()+'<div class="gxs-card"><h1>'+E(ex.t)+'</h1>'+(ex.by?'<p class="gxs-by">👨‍🏫 '+E(ex.by)+'</p>':'')+
+      '<div class="gxs-chips">'+meta.map(x=>'<span>'+E(x)+'</span>').join('')+'</div>'+
+      (prev&&!instant?'<div class="gxs-note">✅ ይህንን ፈተና ቀድሞ ወስደዋል። ኮዱ ከታች አለ።</div>'+codeBox(prev.code,prev.name):
+      '<div class="gxs-f"><label>ሙሉ ስምዎ *</label><input type="text" id="gxsN" maxlength="60" autocomplete="name" placeholder="ለምሳሌ፦ አበበ ከበደ" value="'+E(prev?prev.name:'')+'"></div>'+
+      '<div class="gxs-f"><label>ቡድን / ክፍል (ካለ)</label><input type="text" id="gxsC" maxlength="30"></div>'+
+      '<ul class="gxs-rules"><li>ስምዎን በትክክል ይጻፉ — ውጤትዎ በስምዎ ይመዘገባል።</li><li>'+(ex.m?'ሲጀምሩ ሰዓቱ ይጀምራል፤ ሲያልቅ በራሱ ይላካል።':'በራስዎ ፍጥነት ይመልሱ።')+'</li></ul>'+
+      '<p class="gxs-er" id="gxsEr"></p><button class="gxs-go" id="gxsStart">ጀምር ▶</button>')+'</div>');
+    const b=ov.querySelector('#gxsStart'); if(b) b.onclick=()=>{ const n=ov.querySelector('#gxsN').value.trim(); if(n.length<2){ const er=ov.querySelector('#gxsEr'); er.textContent='እባክዎ ስምዎን ያስገቡ'; er.style.display='block'; return; } S.name=n; S.cls=ov.querySelector('#gxsC').value.trim(); begin(); };
+    wireCopy();
+  }
+  function begin(){
+    S.order=idx(N); S.perm=ex.q.map(q=>q[0]==='mc'?idx(q[2].length):null);
+    if(ex.sh){ shuffle(S.order); S.perm.forEach(p=>{ if(p) shuffle(p); }); }
+    S.i=0; S.t0=Date.now();
+    if(ex.m){ clearInterval(tm); tm=setInterval(()=>{ const left=ex.m*60-Math.floor((Date.now()-S.t0)/1000); const t=ov.querySelector('#gxsTm'); if(t){ t.textContent='⏱ '+fmtT(left); t.className='gxs-tm'+(left<=60?' low':''); } if(left<=0){ clearInterval(tm); finish(true); } },1000); }
+    quiz();
+  }
+  function quiz(){
+    const qi=S.order[S.i], q=ex.q[qi], a=S.ans[qi]; let body='';
+    if(q[0]==='mc') body=S.perm[qi].map((oi,pos)=>'<button type="button" class="gxs-opt'+(a===oi?' on':'')+'" data-o="'+oi+'"><span class="ol">'+String.fromCharCode(65+pos)+'</span><span>'+E(q[2][oi])+'</span></button>').join('');
+    else if(q[0]==='tf') body=[0,1].map(oi=>'<button type="button" class="gxs-opt'+(a===oi?' on':'')+'" data-o="'+oi+'"><span class="ol">'+(oi?'✘':'✔')+'</span><span>'+TF[oi]+'</span></button>').join('');
+    else body='<input type="text" id="gxsSa" class="gxs-sa" maxlength="200" placeholder="መልስዎን እዚህ ይጻፉ" value="'+E(a||'')+'" autocomplete="off">';
+    const dots=S.order.map((x,p)=>'<button type="button" class="gxs-dot'+(p===S.i?' cur':'')+(!empty(S.ans[x])?' ans':'')+'" data-p="'+p+'">'+(p+1)+'</button>').join('');
+    shell(head()+'<div class="gxs-bar"><div class="gxs-prog"><i style="width:'+Math.round((S.i+1)/N*100)+'%"></i></div><div class="gxs-cnt">'+(S.i+1)+' / '+N+'</div>'+(ex.m?'<div class="gxs-tm" id="gxsTm">⏱ '+fmtT(ex.m*60-Math.floor((Date.now()-S.t0)/1000))+'</div>':'')+'</div>'+
+      '<div class="gxs-card"><div class="gxs-qh"><span class="gxs-badge">'+E(KIND[q[0]]||'')+'</span><span class="gxs-pt">'+(q[3]||1)+' ነጥብ</span></div><h2 class="gxs-q">'+E(q[1])+'</h2><div>'+body+'</div></div>'+
+      '<div class="gxs-nav"><button type="button" class="gxs-ghost" id="gxsPrev"'+(S.i===0?' disabled':'')+'>◀ ቀዳሚ</button>'+(S.i<N-1?'<button type="button" class="gxs-go" id="gxsNext">ቀጣይ ▶</button>':'<button type="button" class="gxs-go fin" id="gxsFin">✔ አስረክብ</button>')+'</div><div class="gxs-dots">'+dots+'</div>');
+    [].forEach.call(ov.querySelectorAll('.gxs-opt'),b=>{ b.onclick=()=>{ S.ans[qi]=parseInt(b.getAttribute('data-o'),10); quiz(); }; });
+    const sa=ov.querySelector('#gxsSa'); if(sa) sa.oninput=()=>{ S.ans[qi]=sa.value; };
+    const keep=()=>{ const s2=ov.querySelector('#gxsSa'); if(s2) S.ans[qi]=s2.value; };
+    const pv=ov.querySelector('#gxsPrev'); if(pv) pv.onclick=()=>{ keep(); S.i--; quiz(); };
+    const nx=ov.querySelector('#gxsNext'); if(nx) nx.onclick=()=>{ keep(); S.i++; quiz(); };
+    const fn=ov.querySelector('#gxsFin'); if(fn) fn.onclick=()=>{ keep(); const miss=S.ans.filter(empty).length; if(!confirm((miss?'ያልመለሱት ጥያቄ፦ '+miss+'\n':'')+'ማስረከብ ይፈልጋሉ? በኋላ መቀየር አይቻልም።')) return; finish(false); };
+    [].forEach.call(ov.querySelectorAll('.gxs-dot'),b=>{ b.onclick=()=>{ keep(); S.i=parseInt(b.getAttribute('data-p'),10); quiz(); }; });
+    if(sa) sa.focus();
+  }
+  async function finish(auto){
+    clearInterval(tm); const used=Math.round((Date.now()-S.t0)/1000);
+    const out={e:ex.i,n:S.name||'—',c:S.cls,a:S.ans.map(x=>x),u:used,d:Date.now()};
+    const code='R1.'+await pack(out);
+    try{ localStorage.setItem(doneKey,JSON.stringify({code,name:out.n})); }catch(_){}
+    let res=null;
+    if(instant){
+      let sc=0,mx=0; const det=ex.q.map((q,i)=>{
+        const p=q[3]||1, a=S.ans[i]; mx+=p; let ok=false, corr=null;
+        if(ex.h){ const hs=ex.h[i]||[]; if(!empty(a)) ok=hs.indexOf(hash(ex.i+':'+i+':'+(q[0]==='sa'?norm(a):String(a))))>=0;
+          if(q[0]!=='sa'){ const n=q[0]==='tf'?2:q[2].length; for(let k=0;k<n;k++) if(hs.indexOf(hash(ex.i+':'+i+':'+k))>=0) corr=k; } }
+        else if(ex.k){ corr=ex.k[i]; ok=a===corr; }
+        if(ok) sc+=p; return {ok,corr};
+      });
+      res={sc,mx,det};
+    }
+    done(code,res,auto,out.n);
+  }
+  function done(code,res,auto,nm){
+    let h=head();
+    if(res){
+      const pct=res.mx?Math.round(res.sc/res.mx*100):0, C=2*Math.PI*52, off=C-C*pct/100;
+      const msg=pct>=90?'እጅግ በጣም ጥሩ! 🌟':pct>=70?'በጣም ጥሩ! 👏':pct>=50?'ጥሩ ነው፤ ይበልጥ ይሞክሩ 🙂':'አይዞዎት፤ እንደገና ያጥኑና ይሞክሩ 💪';
+      h+='<div class="gxs-card gxs-res"><svg class="gxs-ring" viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="bg"/><circle cx="60" cy="60" r="52" class="fg" style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+off.toFixed(1)+'"/><text x="60" y="62" text-anchor="middle" class="n">'+pct+'%</text><text x="60" y="80" text-anchor="middle" class="s">'+res.sc+'/'+res.mx+'</text></svg><h2>'+E(nm)+'</h2><p class="gxs-msg">'+msg+'</p></div>'+
+        '<div class="gxs-card"><h3 style="margin:0 0 6px;color:var(--gx-g2)">ምላሾችዎ</h3>'+ex.q.map((q,i)=>{
+          const a=S.ans[i], d=res.det[i];
+          const mine=empty(a)?'—':(q[0]==='mc'?q[2][a]:q[0]==='tf'?TF[a]:a);
+          const corr=(q[0]==='mc'&&d.corr!=null)?q[2][d.corr]:(q[0]==='tf'&&d.corr!=null)?TF[d.corr]:'';
+          return '<div class="gxs-rv '+(d.ok?'ok':'bad')+'"><b>'+(d.ok?'✅':'❌')+' '+(i+1)+'.</b> '+E(q[1])+'<div class="meta"><span>የእርስዎ፦</span> '+E(mine)+(!d.ok&&corr?' · <span>ትክክለኛው፦</span> '+E(corr):'')+'</div></div>';
+        }).join('')+'</div>';
+    }else{
+      h+='<div class="gxs-card gxs-res"><div class="gxs-big">✅</div><h2>'+E(nm)+'</h2><p class="gxs-msg">'+(auto?'ሰዓቱ አልቋል — ምላሽዎ ተመዝግቧል።':'ምላሽዎ ተመዝግቧል! ውጤቱን አስተባባሪዎ ይነግርዎታል።')+'</p></div>';
+    }
+    h+='<div class="gxs-card">'+codeBox(code,nm)+'</div>';
+    h+=(instant?'<button type="button" class="gxs-ghost gxs-full" id="gxsAgain" style="margin-bottom:8px">🔁 ዳግም ሞክር</button>':'')+'<button type="button" class="gxs-ghost gxs-full" id="gxsClose">ዝጋ</button>';
+    shell(h); wireCopy();
+    const ag=ov.querySelector('#gxsAgain'); if(ag) ag.onclick=()=>{ S.ans=ex.q.map(q=>q[0]==='sa'?'':-1); prev=null; intro(); };
+    ov.querySelector('#gxsClose').onclick=()=>{ clearInterval(tm); ov.remove(); try{ history.replaceState(null,'',baseUrl()); }catch(_){} };
+  }
+  intro();
 }
 window.addEventListener('hashchange',openTake); openTake();
-/* --- showPage hook --- */
-(function(){ const sp=window.showPage; window.showPage=function(id){ const r=sp.apply(this,arguments); try{ if(id==='exams'){ trainOptsRefresh(); ggExRender(); } }catch(e){} return r; }; })();
-function trainOptsRefresh(){}
-/* --- new dashboard --- */
+
+/* ---------- showPage ---------- */
+(function(){ const sp=window.showPage; window.showPage=function(id){ const r=sp.apply(this,arguments); try{ if(id==='exams') window.ggExRender(); }catch(e){} return r; }; })();
+
+/* ---------- ዘመናዊ ዳሽቦርድ ---------- */
+const WD=['እሑድ','ሰኞ','ማክሰኞ','ረቡዕ','ሐሙስ','አርብ','ቅዳሜ'];
+function ring(pct,cls){ const C=2*Math.PI*44, off=C-C*Math.max(0,Math.min(100,pct))/100;
+  return '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="bg"/><circle cx="50" cy="50" r="44" class="fg '+(cls||'')+'" style="stroke-dasharray:'+C.toFixed(1)+';stroke-dashoffset:'+off.toFixed(1)+'"/><text x="50" y="58" text-anchor="middle">'+Math.round(pct)+'%</text></svg>'; }
 const rd=window.renderDashboard;
 window.renderDashboard=function(){
   rd.apply(this,arguments); exs();
-  const pg=$('page-dashboard'); const rs=state.examResults, nEx=state.exams.length;
-  const avg=rs.length?Math.round(rs.reduce((a,r)=>a+r.score/r.max*100,0)/rs.length):0;
-  const pres=state.attendance.length?Math.round(state.attendance.filter(a=>a.status==='present'||a.status==='ተገኝቷል'||a.status==='ተገኝ').length/state.attendance.length*100):0;
-  if(!$('gxHero')){ const h=document.createElement('div'); h.id='gxHero'; h.className='gx-hero';
-    h.innerHTML='<span class="gx-cross">✝</span><h2>ዲጂታል ግቢ ጉባኤ</h2><p>አባላት፣ ስልጠናዎች፣ ተሳትፎ እና ፈተናዎች — በአንድ እይታ</p>'; pg.insertBefore(h,pg.firstChild); }
-  $('dashStats').className='gx-stats';
-  $('dashStats').innerHTML=`
-   <div class="gx-stat g"><div class="n">${state.members.length}</div><div class="l">👥 አባላት</div></div>
-   <div class="gx-stat"><div class="n">${state.students.length}</div><div class="l">📕 ተማሪዎች</div></div>
-   <div class="gx-stat"><div class="n">${state.teachers.length}</div><div class="l">👨‍🏫 መምህራን</div></div>
-   <div class="gx-stat g"><div class="n">${ggTrainAll().length}</div><div class="l">🎓 ስልጠናዎች</div></div>
-   <div class="gx-stat"><div class="n">${state.attendance.length}</div><div class="l">📅 የተሳትፎ መዝገቦች</div></div>
-   <div class="gx-stat"><div class="n">${nEx}</div><div class="l">📝 ፈተናዎች</div></div>
-   <div class="gx-stat g"><div class="n">${avg}%</div><div class="l">⭐ አማካይ ውጤት</div></div>`;
-  const qa=pg.querySelector('.dash-actions'); if(qa && !qa.querySelector('[data-gx]')){ const b=document.createElement('button'); b.className='btn btn-gold'; b.setAttribute('data-gx','1'); b.textContent='📝 ፈተና'; b.onclick=function(){ showPageById('exams'); }; qa.appendChild(b); }
-  let card=$('gxDashCard'); if(!card){ card=document.createElement('div'); card.id='gxDashCard'; card.className='card'; const col=pg.querySelector('.dash-col'); col.appendChild(card); }
-  const by={}; rs.forEach(r=>{ const k=r.training||'—'; (by[k]=by[k]||[]).push(r.score/r.max*100); });
-  const bars=Object.keys(by).map(k=>({k,v:Math.round(by[k].reduce((a,b)=>a+b,0)/by[k].length)})).sort((a,b)=>b.v-a.v).slice(0,8);
-  card.innerHTML='<h3>📝 የፈተና ውጤት በስልጠና</h3>'+(bars.length?bars.map(b=>`<div class="gx-bar"><span class="t">${E(b.k)}</span><span class="b"><i style="width:${b.v}%"></i></span><span class="v">${b.v}%</span></div>`).join(''):'<p class="empty" style="padding:14px">እስካሁን የፈተና ውጤት የለም።</p>')
-    +(rs.length?'<h4 style="margin:12px 0 4px;color:#1a4d2e">የቅርብ ጊዜ ውጤቶች</h4>'+rs.slice(0,5).map(r=>`<div style="display:flex;justify-content:space-between;font-size:.85rem;padding:4px 0;border-bottom:1px dashed #d9e2db"><span>${E(r.name)} · ${E(r.training||'')}</span><b style="color:#1a4d2e">${r.score}/${r.max}</b></div>`).join(''):'');
+  const pg=$('page-dashboard'); if(!pg) return;
+  const rs=state.examResults, nEx=state.exams.length;
+  const avg=rs.length?Math.round(rs.reduce((a,r)=>a+pctOf(r),0)/rs.length):0;
+  let pres=0,tot=0; state.attendance.forEach(a=>{ pres+=(+a.present||0)+(+a.late||0); tot+=(+a.total||0); }); const presPct=tot?pres/tot*100:0;
+  const male=state.students.filter(s=>s.gender==='ወንድ').length, female=state.students.filter(s=>s.gender==='ሴት').length, gt=male+female;
+  /* hero */
+  let ec=null, wd=''; try{ ec=ecNow(); wd=WD[new Date().getDay()]; }catch(e){}
+  const hero='<span class="gx-cross">✝</span><h2>'+E(orgName())+'</h2><p>አባላት፣ ስልጠናዎች፣ ተሳትፎ እና ፈተናዎች — በአንድ እይታ</p>'+
+    (ec?'<div class="gx-date">📅 <span>'+E(wd)+'</span> · <span>'+E(EC_MONTHS[ec.month-1])+'</span> '+ec.day+' '+ec.year+' <span>ዓ.ም.</span></div>':'')+
+    '<div class="gx-pills"><span class="gx-pill"><b>'+state.students.length+'</b> <span>ተማሪዎች</span></span><span class="gx-pill"><b>'+state.teachers.length+'</b> <span>መምህራን</span></span><span class="gx-pill"><b>'+nEx+'</b> <span>ፈተናዎች</span></span></div>';
+  let hr=$('gxHero'); if(!hr){ hr=document.createElement('div'); hr.id='gxHero'; hr.className='gx-hero'; pg.insertBefore(hr,pg.firstChild); } hr.innerHTML=hero;
+  /* KPI */
+  const K=(ic,n,l,g)=>'<div class="gx-kpi'+(g?' g':'')+'"><div class="ic">'+ic+'</div><div><div class="n">'+n+'</div><div class="l">'+l+'</div></div></div>';
+  const ds=$('dashStats'); ds.className='gx-kpis';
+  ds.innerHTML=K('👥',state.members.length,'አባላት',1)+K('📕',state.students.length,'ተማሪዎች')+K('👨‍🏫',state.teachers.length,'መምህራን')+K('🎓',ggTrainAll().length,'ስልጠናዎች',1)+
+    K('📅',state.attendance.length,'የተሳትፎ መዝገቦች')+K('📝',nEx,'ፈተናዎች')+K('🧑‍🎓',rs.length,'ተመዛኞች')+K('⭐',avg+'%','አማካይ ውጤት',1);
+  /* actions + rings + exam board */
+  const by={}; rs.forEach(r=>{ const k=r.training||'—'; (by[k]=by[k]||[]).push(pctOf(r)); });
+  const bars=Object.keys(by).map(k=>({k,v:Math.round(by[k].reduce((a,b)=>a+b,0)/by[k].length),n:by[k].length})).sort((a,b)=>b.v-a.v).slice(0,8);
+  const top={}; rs.forEach(r=>{ const k=norm(r.name); (top[k]=top[k]||{n:r.name,s:[]}).s.push(pctOf(r)); });
+  const tl=Object.keys(top).map(k=>({n:top[k].n,v:Math.round(top[k].s.reduce((a,b)=>a+b,0)/top[k].s.length),c:top[k].s.length})).sort((a,b)=>b.v-a.v||b.c-a.c).slice(0,5);
+  let box=$('gxDash'); if(!box){ box=document.createElement('div'); box.id='gxDash'; ds.parentNode.insertBefore(box,ds.nextSibling); }
+  box.innerHTML=
+   '<div class="gx-panel" style="margin-bottom:14px"><h3>⚡ <span>ፈጣን ተግባራት</span></h3><div class="gx-act">'+
+     '<button data-go="students"><span>📕</span>ተማሪ መዝግብ</button><button data-go="teachers"><span>👨‍🏫</span>መምህር መዝግብ</button><button data-go="attendance"><span>📅</span>አቴንዳንስ</button>'+
+     '<button data-go="exams"><span>📝</span>ፈተና</button><button data-go="idcards"><span>🪪</span>መታወቂያ</button><button data-go="grades"><span>📊</span>ውጤት</button></div></div>'+
+   '<div class="gx-row">'+
+     '<div class="gx-panel"><h3>📅 <span>የተሳትፎ መጠን</span></h3>'+(tot?'<div class="gx-ring">'+ring(presPct,'g')+'<div class="lg"><b>'+Math.round(presPct)+'%</b> <span>አማካይ ተገኝነት</span><br>'+state.attendance.length+' <span>የመዝገብ ቀናት</span></div></div>':'<div class="gx-empty">እስካሁን የአቴንዳንስ መዝገብ የለም።</div>')+'</div>'+
+     '<div class="gx-panel"><h3>👫 <span>የተማሪዎች ስብጥር</span></h3>'+(gt?'<div class="gx-ring">'+ring(male/gt*100)+'<div class="lg"><span class="gx-dot" style="background:var(--gx-au)"></span>ወንድ <b>'+male+'</b><br><span class="gx-dot" style="background:#eef3ef;border:1px solid #cfd9d2"></span>ሴት <b>'+female+'</b></div></div>':'<div class="gx-empty">እስካሁን የተመዘገበ ተማሪ የለም።</div>')+'</div>'+
+     '<div class="gx-panel"><h3>🏆 <span>ከፍተኛ ውጤት ያላቸው</span></h3>'+(tl.length?tl.map((x,i)=>'<div class="gx-lb"><span class="m">'+(i<3?['🥇','🥈','🥉'][i]:i+1)+'</span><span class="nm">'+E(x.n)+'</span><span class="sc">'+x.v+'%</span></div>').join(''):'<div class="gx-empty">እስካሁን የፈተና ውጤት የለም።</div>')+'</div>'+
+   '</div>'+
+   '<div class="gx-panel" style="margin-bottom:14px"><h3>📝 <span>የፈተና ውጤት በስልጠና</span></h3>'+(bars.length?bars.map(b=>'<div class="gx-bar"><span class="t">'+E(b.k)+'</span><span class="b"><i style="width:'+b.v+'%"></i></span><span class="v">'+b.v+'%</span></div>').join(''):'<div class="gx-empty">እስካሁን የፈተና ውጤት የለም። በ«ፈተና» ገጽ ይጀምሩ።</div>')+'</div>';
+  [].forEach.call(box.querySelectorAll('[data-go]'),b=>{ b.onclick=()=>showPageById(b.getAttribute('data-go')); });
+  /* ከዚህ በፊት የነበረው የፈጣን ተግባር ካርድ በአዲሱ ተተክቷል */
+  const oldA=pg.querySelector('.dash-actions'); if(oldA&&oldA.closest('.card')) oldA.closest('.card').style.display='none';
 };
+
+/* ---------- ትርጉም (en / om / ti) — ያሉትን ቃላት አይተካም ---------- */
+(function(){
+  if(typeof GG_TR==='undefined') return;
+  const D={
+"የተሳትፎ መጠን":["Attendance rate","Hanga hirmaannaa","መጠን ተሳትፎ"],
+"አማካይ ተገኝነት":["Average attendance","Giddugaleessa argamuu","ማእከላይ ተሳትፎ"],
+"የመዝገብ ቀናት":["Recorded days","Guyyaawwan galmaa'an","ዝተመዝገቡ መዓልታት"],
+"የተማሪዎች ስብጥር":["Students by gender","Barattoota saala irratti","ተማሃሮ ብጾታ"],
+"ከፍተኛ ውጤት ያላቸው":["Top scorers","Ba'aa olaanaa kan qaban","ላዕለዋይ ውጽኢት ዘለዎም"],
+"እስካሁን የፈተና ውጤት የለም። በ«ፈተና» ገጽ ይጀምሩ።":["No exam results yet. Start from the “Exams” page.","Hanga ammaatti bu'aan qormaataa hin jiru. Fuula “Qormaata” irraa jalqabaa.","ክሳብ ሕጂ ውጽኢት ፈተና የለን። ካብ ገጽ «ፈተና» ጀምሩ።"],
+"ዘመናዊ ፈተና":["Modern exam","Qormaata ammayyaa'aa","ዘመናዊ ፈተና"],
+"ፈተና ያዘጋጁ፣ በሊንክ ይላኩ — ተመዛኙ ስሙን አስገብቶ ይመልሳል፤ ውጤቱ በኮድ ይመለስልዎታል።":["Create an exam and send it by link — the examinee enters their name and answers; the result comes back to you as a code.","Qormaata qopheessaa, liinkiin ergaa — kan qoratamu maqaa isaa galchee deebisa; bu'aan koodiidhaan isinitti deebi'a.","ፈተና ኣዳልዉ፣ ብሊንክ ለኣኽዎ — ተመዛዚ ስሙ የእቱ መልሲ ይህብ፤ ውጽኢቱ ብኮድ ይምለስልኩም።"],
+"አዲስ ፈተና ፍጠር":["Create new exam","Qormaata haaraa uumi","ሓድሽ ፈተና ፍጠር"],
+"ገና ፈተና አልተፈጠረም።":["No exam created yet.","Ammatti qormaanni hin uumamne.","ዓዲ ፈተና ኣይተፈጥረን።"],
+"አዘጋጅ (የእርስዎ ስም)":["Prepared by (your name)","Kan qopheesse (maqaa keessan)","ኣዳላዊ (ስምኩም)"],
+"ልምምድ":["Practice","Shaakala","ልምምድ"],
+"ተመዛኙ ውጤቱን ወዲያው ያያል (ቁልፉ በሊንኩ ውስጥ ተመስጥሮ ይሄዳል)":["The examinee sees the score instantly (the key travels encrypted inside the link)","Kan qoratamu bu'aa isaa battalumatti arga (furtuun liinkii keessatti icciitiin deema)","ተመዛዚ ውጽኢቱ ብቐጥታ ይርኢ (እቲ መፍቲሕ ኣብ ውሽጢ ሊንክ ተሰዊሩ ይኸይድ)"],
+"ይፋዊ ፈተና":["Formal exam","Qormaata sirnaawaa","ወግዓዊ ፈተና"],
+"ቁልፉ ከእርስዎ ጋር ብቻ ነው፤ ተመዛኙ ኮድ ይልክልዎታል":["The key stays only with you; the examinee sends you a code","Furtuun isin biraa qofa; kan qoratamu koodii isiniif erga","እቲ መፍቲሕ ምሳኹም ጥራይ እዩ፤ ተመዛዚ ኮድ ይሰደልኩም"],
+"ጥያቄዎችንና ምርጫዎችን አዋህድ":["Shuffle questions and options","Gaaffiiwwanii fi filannoowwan makii","ሕቶታትን ምርጫታትን ሓዋህድ"],
+"ገና ጥያቄ አልጨመሩም።":["No questions added yet.","Ammatti gaaffiin hin dabalamne.","ዓዲ ሕቶ ኣይወሰኽኩምን።"],
+"አጭር መልስ":["Short answer","Deebii gabaabaa","ሓጺር መልሲ"],
+"ትክክለኛውን ምርጫ በክብ ምልክት ይምረጡ — ይህ የመልስ ቁልፉ ነው።":["Tick the circle of the correct option — this is the answer key.","Filannoo sirrii mallattoo geengoo irraan filadhaa — kun furtuu deebii ti.","ቅኑዕ ምርጫ ብክቢ ምልክት ምረጹ — እዚ መፍቲሕ መልሲ እዩ።"],
+"ጥያቄውን ጨምር":["Add question","Gaaffii dabaali","ሕቶ ወስኽ"],
+"ጥያቄው":["Question","Gaaffii","እቲ ሕቶ"],
+"ምርጫ A":["Option A","Filannoo A","ምርጫ A"],"ምርጫ B":["Option B","Filannoo B","ምርጫ B"],"ምርጫ C":["Option C","Filannoo C","ምርጫ C"],"ምርጫ D":["Option D","Filannoo D","ምርጫ D"],"ምርጫ E":["Option E","Filannoo E","ምርጫ E"],"ምርጫ F":["Option F","Filannoo F","ምርጫ F"],
+"መልሱ እውነት":["Answer: True","Deebiin dhugaa","መልሲ እውነት"],
+"መልሱ ሐሰት":["Answer: False","Deebiin soba","መልሲ ሓሶት"],
+"ፊደሉና ክፍተቱ ልዩነት አይፈጥርም፤ ከተዘረዘሩት አንዱ ከሆነ ትክክል ነው።":["Letter case and spacing make no difference; it is correct if it matches one of those listed.","Qubee fi iddoon gidduu garaagarummaa hin uumu; yoo tokko kan tarreeffaman ta'e sirriidha.","ፊደልን ክፍተትን ፍልልይ ኣይፈጥርን፤ ሓደ ካብቶም ዝተዘርዘሩ እንተኮይኑ ቅኑዕ እዩ።"],
+"ተቀባይነት ያላቸው መልሶች በ ፣ ወይም , ይለዩ":["Accepted answers separated by ፣ or ,","Deebiiwwan fudhatamoo ፣ ykn , tiin adda baafaman","ተቐባልነት ዘለዎም መልስታት ብ ፣ ወይ , ኣፍልዩ"],
+"ጥያቄውን ይጻፉ":["Write the question","Gaaffii barreessaa","ሕቶ ጽሕፉ"],
+"ርዕስ ያስገቡ":["Enter a title","Mata duree galchaa","ርእሲ የእትዉ"],
+"የስልጠና ዓይነት ይምረጡ":["Choose a training type","Gosa leenjii filadhaa","ዓይነት ስልጠና ምረጹ"],
+"ቢያንስ አንድ ጥያቄ ይጨምሩ":["Add at least one question","Yoo xiqqaate gaaffii tokko dabalaa","እንተ ወሓደ ሓደ ሕቶ ወስኹ"],
+"ከ# ጥያቄ አይበልጥም":["No more than # questions","Gaaffii # caalu hin danda'amu","ካብ # ሕቶ ኣይትሓልፍን"],
+"ቢያንስ # ምርጫ ያስፈልጋል":["At least # options are needed","Yoo xiqqaate filannoo # barbaachisa","እንተ ወሓደ # ምርጫታት የድልዩ"],
+"ትክክለኛው ምርጫ ባዶ ነው":["The correct option is empty","Filannoon sirriin duwwaadha","እቲ ቅኑዕ ምርጫ ባዶ እዩ"],
+"ቢያንስ አንድ ትክክለኛ መልስ ያስገቡ":["Enter at least one correct answer","Yoo xiqqaate deebii sirrii tokko galchaa","እንተ ወሓደ ሓደ ቅኑዕ መልሲ የእትዉ"],
+"አጋራ":["Share","Qoodi","ኣካፍል"],
+"ምላሽ ተቀበል":["Receive response","Deebii simadhu","መልሲ ተቐበል"],
+"የተመዛኝ ሊንክ":["Examinee link","Liinkii kan qoratamu","ሊንክ ተመዛዚ"],
+"ፊደል":["characters","qubee","ፊደላት"],
+"ልምምድ — ተመዛኙ ውጤቱን ወዲያው ያያል":["Practice — the examinee sees the score instantly","Shaakala — kan qoratamu bu'aa battalumatti arga","ልምምድ — ተመዛዚ ውጽኢቱ ብቐጥታ ይርኢ"],
+"ይፋዊ — ቁልፉ በሊንኩ ውስጥ የለም":["Formal — the key is not in the link","Sirnaawaa — furtuun liinkii keessa hin jiru","ወግዓዊ — እቲ መፍቲሕ ኣብ ሊንክ የለን"],
+"ሊንኩ ረጅም ነው፤ አንዳንድ መተግበሪያዎች ሊቆርጡት ይችላሉ — ጥያቄዎችን ይቀንሱ።":["The link is long; some apps may cut it — reduce the questions.","Liinkiin dheeraadha; appiiwwan tokko tokko ni kutu — gaaffiiwwan hir'isaa.","እቲ ሊንክ ነዊሕ እዩ፤ ገለ ኣፕታት ክቖርጽዎ ይኽእሉ — ሕቶታት ኣነኽዩ።"],
+"ቅዳ":["Copy","Waraabi","ቅዳሕ"],
+"ተቀድቷል":["Copied","Waraabameera","ተቐዲሑ"],
+"የተመዛኞችን ኮድ ወይም ሊንክ ይለጥፉ (በየመስመሩ አንድ)":["Paste examinees' codes or links (one per line)","Koodii ykn liinkii kan qoratamoo maxxansaa (sarara tokkoon tokko)","ኮድ ወይ ሊንክ ተመዘዝቲ ለጥፉ (ኣብ ነፍሲ ወከፍ መስመር ሓደ)"],
+"አስገባና አስላ":["Import and grade","Galchiitii herregi","ኣእትዉን ኣስልዉን"],
+"ተቀብሏል፦ #":["Imported: #","Fudhatameera: #","ተቐቢሉ፦ #"],
+"ተቀምጧል":["Saved","Kuufameera","ተቐሚጡ"],
+"ዘመናዊ ፈተና":["Modern exam","Qormaata ammayyaa'aa","ዘመናዊ ፈተና"],
+"# ጥያቄዎች":["# questions","Gaaffiiwwan #","# ሕቶታት"],
+"# ደቂቃ":["# min","Daq. #","# ደቒቕ"],
+"ያለ ሰዓት":["Untimed","Sa'aatii malee","ብዘይ ሰዓት"],
+"# ነጥብ":["# pts","Qabxii #","# ነጥቢ"],
+"ቡድን / ክፍል (ካለ)":["Group / class (if any)","Garee / kutaa (yoo jiraate)","ጉጅለ / ክፍሊ (እንተሎ)"],
+"ስምዎን በትክክል ይጻፉ — ውጤትዎ በስምዎ ይመዘገባል።":["Write your name correctly — your result is recorded under your name.","Maqaa keessan sirriitti barreessaa — bu'aan keessan maqaa keessaan galmaa'a.","ስምኩም ብትኽክል ጽሓፉ — ውጽኢትኩም ብስምኩም ይምዝገብ።"],
+"በራስዎ ፍጥነት ይመልሱ።":["Answer at your own pace.","Saffisa keessaniin deebisaa.","ብዓቕምኩም መልሱ።"],
+"ሲጀምሩ ሰዓቱ ይጀምራል፤ ሲያልቅ በራሱ ይላካል።":["The timer starts when you begin and submits automatically when time is up.","Yeroo jalqabdaniin sa'aatiin jalqaba; yeroon xumurame ofumaan ergama.","ምስ ጀመርኩም ሰዓት ይጅምር፤ ምስ ወድአ ባዕሉ ይልኣኽ።"],
+"ጀምር":["Start","Jalqabi","ጀምር"],
+"ለምሳሌ፦ አበበ ከበደ":["e.g. Abebe Kebede","Fakkeenyaaf: Abbabaa Kabbadaa","ንኣብነት፦ ኣበበ ከበደ"],
+"ቀዳሚ":["Back","Duraa","ቀዳማይ"],
+"ቀጣይ":["Next","Itti aanu","ዝቕጽል"],
+"አስረክብ":["Submit","Dhiyeessi","ኣረክብ"],
+"እጅግ በጣም ጥሩ":["Excellent","Baay'ee gaarii","ብጣዕሚ ሰናይ"],
+"በጣም ጥሩ":["Very good","Baay'ee gaarii","ብጣዕሚ ሰናይ"],
+"ጥሩ ነው፤ ይበልጥ ይሞክሩ":["Good — try harder","Gaarii dha; dabalataan yaalaa","ሰናይ እዩ፤ ዝያዳ ፈትኑ"],
+"አይዞዎት፤ እንደገና ያጥኑና ይሞክሩ":["Don't give up — study again and retry","Hin abdannaa; irra deebi'anii qoratanii yaalaa","ኣይትሕለቑ፤ ከም ሓድሽ ኣጽንዑን ፈትኑን"],
+"ምላሾችዎ":["Your answers","Deebii keessan","መልስታትኩም"],
+"የእርስዎ፦":["Yours:","Kan keessan:","ናትኩም፦"],
+"ትክክለኛው፦":["Correct:","Kan sirrii:","ቅኑዕ፦"],
+"ይህንን ለአስተባባሪዎ ይላኩ፦":["Send this to your coordinator:","Kana qindeessaa keessaniif ergaa:","እዚ ንኣስተባባሪኹም ልኣኹ፦"],
+"ወይም ይህን ኮድ ብቻ ይላኩ፦":["Or send just this code:","Ykn koodii kana qofa ergaa:","ወይ እዚ ኮድ ጥራይ ልኣኹ፦"],
+"ዳግም ሞክር":["Try again","Irra deebi'ii yaali","ዳግም ፈትን"],
+"ዝጋ":["Close","Cufi","ዕጸው"],
+"ይህንን ፈተና ቀድሞ ወስደዋል። ኮዱ ከታች አለ።":["You already took this exam. Your code is below.","Qormaata kana duraan fudhattaniittu. Koodiin gadi jira.","እዚ ፈተና ቅድሚ ሕጂ ወሲድኩሞ። እቲ ኮድ ኣብ ታሕቲ ኣሎ።"],
+"ሰዓቱ አልቋል — ምላሽዎ ተመዝግቧል።":["Time is up — your answers are recorded.","Yeroon xumurameera — deebiin keessan galmaa'eera.","ግዜ ተወዲኡ — መልስኹም ተመዝጊቡ።"],
+"ምላሽዎ ተመዝግቧል! ውጤቱን አስተባባሪዎ ይነግርዎታል።":["Your answers are recorded! Your coordinator will tell you the result.","Deebiin keessan galmaa'eera! Qindeessaan keessan bu'aa isiniif hima.","መልስኹም ተመዝጊቡ! ውጽኢቱ ኣስተባባሪኹም ይነግረኩም።"],
+"እባክዎ ስምዎን ያስገቡ":["Please enter your name","Maqaa keessan galchaa","በጃኹም ስምኩም ኣእትዉ"],
+"የውጤት ደረጃ":["Leaderboard","Sadarkaa bu'aa","ደረጃ ውጽኢት"],
+"ጥያቄ በጥያቄ":["Per question","Gaaffii gaaffiin","ሕቶ ብሕቶ"],
+"ገና ምላሽ አልገባም — «ምላሽ ተቀበል» ይጠቀሙ።":["No responses yet — use “Receive response”.","Ammatti deebiin hin galle — “Deebii simadhu” fayyadamaa.","ዓዲ መልሲ ኣይኣተወን — «መልሲ ተቐበል» ተጠቐሙ።"],
+"ተመለስ":["Back","Deebi'i","ተመለስ"],
+"ተመዛኞች":["Examinees","Kanneen qoratamanii","ተመዛዝቲ"],
+"አማካይ":["Average","Giddugaleessa","ማእከላይ"],
+"ከፍተኛ":["Highest","Olaanaa","ላዕለዋይ"],
+"ዝቅተኛ":["Lowest","Gad-aanaa","ታሕተዋይ"],
+"ቡድን":["Group","Garee","ጉጅለ"],
+"ነጥብ":["Score","Qabxii","ነጥቢ"],
+"ስም":["Name","Maqaa","ስም"],
+"እሑድ":["Sunday","Dilbata","ሰንበት"],"ሰኞ":["Monday","Wiixata","ሰኑይ"],"ማክሰኞ":["Tuesday","Qibxata","ሰሉስ"],"ረቡዕ":["Wednesday","Roobii","ረቡዕ"],"ሐሙስ":["Thursday","Kamisa","ሓሙስ"],"አርብ":["Friday","Jimaata","ዓርቢ"],"ቅዳሜ":["Saturday","Sanbata","ቀዳም"],
+"ዓ.ም.":["E.C.","A.L.H.","ዓ.ም."]
+  };
+  const MON=[["Meskerem","Fuulbana","መስከረም"],["Tikimt","Onkoloolessa","ጥቅምቲ"],["Hidar","Sadaasa","ሕዳር"],["Tahsas","Muddee","ታሕሳስ"],["Tir","Amajjii","ጥሪ"],["Yekatit","Guraandhala","የካቲት"],["Megabit","Bitooteessa","መጋቢት"],["Miyazya","Ebla","ሚያዝያ"],["Ginbot","Caamsaa","ግንቦት"],["Sene","Waxabajjii","ሰነ"],["Hamle","Adooleessa","ሓምለ"],["Nehase","Hagayya","ነሓሰ"],["Pagume","Qaammee","ጳጉሜን"]];
+  try{ EC_MONTHS.forEach((m,i)=>{ if(MON[i]) D[m]=MON[i]; }); }catch(e){}
+  Object.keys(D).forEach(k=>{ if(!GG_TR[k]) GG_TR[k]=D[k]; });
+})();
+
 try{ renderDashboard(); }catch(e){ console.error(e); }
 })();
 
